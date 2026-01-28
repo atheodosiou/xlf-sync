@@ -18,7 +18,7 @@
     <unit id="legacy.key">
       <segment>
         <source>[OBSOLETE]</source>
-        <target>[OBSOLETE]</target>
+        <target state="obsolete">[OBSOLETE]</target>
       </segment>
     </unit>
   </file>

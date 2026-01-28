@@ -14,7 +14,8 @@
 
       <trans-unit id="old.key">
         <source>[OBSOLETE]</source>
-        <target>[OBSOLETE]</target>
+        <target state="obsolete">[OBSOLETE]</target>
+        <note>Marked obsolete by xlf-sync</note>
       </trans-unit>
     </body>
   </file>
