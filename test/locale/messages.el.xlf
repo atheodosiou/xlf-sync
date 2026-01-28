@@ -7,10 +7,14 @@
         <target>Αρχική</target>
       </trans-unit>
 
-      <!-- obsolete key (δεν υπάρχει πια στο source) -->
+      <trans-unit id="home.subtitle">
+        <source>Welcome to the app</source>
+        <target>TODO</target>
+      </trans-unit>
+
       <trans-unit id="old.key">
-        <source>Old</source>
-        <target>Παλιό</target>
+        <source>[OBSOLETE]</source>
+        <target>[OBSOLETE]</target>
       </trans-unit>
     </body>
   </file>

@@ -8,10 +8,17 @@
       </segment>
     </unit>
 
+    <unit id="home.subtitle">
+      <segment>
+        <source>Welcome to the app</source>
+        <target>TODO</target>
+      </segment>
+    </unit>
+
     <unit id="legacy.key">
       <segment>
-        <source>Legacy</source>
-        <target>Alt</target>
+        <source>[OBSOLETE]</source>
+        <target>[OBSOLETE]</target>
       </segment>
     </unit>
   </file>

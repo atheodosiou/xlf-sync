@@ -2,6 +2,10 @@ import { Command } from "commander";
 import ora from "ora";
 import { ui } from "../ui/console.js";
 import { discoverFiles } from "../core/discover.js";
+import { readFile, writeFile } from "node:fs/promises";
+import { parseXlf, writeXlf } from "../core/xlf/index.js";
+import { syncLocale } from "../core/sync.js";
+import { renderSummaryTable } from "../ui/table.js";
 
 export function registerSyncCommand(program: Command) {
     program
@@ -12,12 +16,20 @@ export function registerSyncCommand(program: Command) {
         .option("--dry-run", "Do not write files, only report changes", false)
         .option("--new-target <mode>", "todo | empty | source", "todo")
         .option("--obsolete <mode>", "delete | mark | graveyard", "mark")
-        .option("--graveyard-file <path>", "Graveyard output path pattern", "src/locale/_obsolete.{locale}.xlf")
+        .option(
+            "--graveyard-file <path>",
+            "Graveyard output path pattern",
+            "src/locale/_obsolete.{locale}.xlf"
+        )
         .action(async (opts) => {
             ui.headerBox("xlf-sync", "Sync XLIFF locale files");
+            console.log(); // ένα καθαρό κενό μετά
+
 
             const spinner = ora("Scanning files...").start();
+
             try {
+                // 1️⃣ Discover source + locale files
                 const res = await discoverFiles({
                     sourcePath: opts.source,
                     localesGlob: opts.locales,
@@ -29,12 +41,66 @@ export function registerSyncCommand(program: Command) {
                     ui.info(`- ${lf.locale}: ${lf.filePath}`);
                 }
 
-                ui.success("Discovery OK");
+                // 2️⃣ Parse source file
+                const sourceXml = await readFile(res.sourcePath, "utf-8");
+                const sourceParsed = parseXlf(sourceXml);
+
+                // 3️⃣ Parse locale files + compute diff + (optionally) write
+                const rows: {
+                    locale: string;
+                    version: string;
+                    sourceKeys: number;
+                    localeKeys: number;
+                    added: number;
+                    obsolete: number;
+                    missingTargets: number;
+                }[] = [];
+
+                for (const lf of res.localeFiles) {
+                    const xml = await readFile(lf.filePath, "utf-8");
+                    const parsed = parseXlf(xml);
+
+                    const diff = syncLocale(sourceParsed.entries, parsed.entries, {
+                        newTarget: opts.newTarget,
+                        obsolete: opts.obsolete,
+                    });
+
+                    // Build output XML (same version as the locale file)
+                    const outputXml = writeXlf(parsed, diff.merged, diff.obsoleteKeys, {
+                        newTarget: opts.newTarget,
+                        obsolete: opts.obsolete,
+                    });
+
+                    // Write only if not dry-run
+                    if (!opts.dryRun) {
+                        await writeFile(lf.filePath, outputXml, "utf-8");
+                    }
+
+                    rows.push({
+                        locale: lf.locale,
+                        version: parsed.version,
+                        sourceKeys: sourceParsed.entries.size,
+                        localeKeys: parsed.entries.size,
+                        added: diff.addedKeys.length,
+                        obsolete: diff.obsoleteKeys.length,
+                        missingTargets: diff.missingTargets.length,
+                    });
+                }
+
+                spinner.stop();
+
+                // 4️⃣ Render summary table
+                renderSummaryTable(rows);
+
+                if (opts.dryRun) {
+                    ui.success("Diff OK (dry-run)");
+                } else {
+                    ui.success("Sync OK (files updated)");
+                }
             } catch (e: any) {
                 spinner.fail("Failed");
                 ui.error(e?.message ?? String(e));
                 process.exitCode = 1;
             }
-
         });
 }
