@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<xliff version="1.2">
+  <file source-language="en" datatype="plaintext" original="ng2.template">
+    <body>
+      <trans-unit id="home.title">
+        <source>Home</source>
+      </trans-unit>
+
+      <trans-unit id="home.subtitle">
+        <source>Welcome to the app</source>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

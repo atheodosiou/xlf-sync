@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="2.0" srcLang="en" trgLang="de">
+  <file id="f1">
+    <unit id="home.title">
+      <segment>
+        <source>Home</source>
+        <target>Startseite</target>
+      </segment>
+    </unit>
+
+    <unit id="legacy.key">
+      <segment>
+        <source>Legacy</source>
+        <target>Alt</target>
+      </segment>
+    </unit>
+  </file>
+</xliff>
