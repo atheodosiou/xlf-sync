@@ -6,6 +6,11 @@ import { readFile, writeFile } from "node:fs/promises";
 import { parseXlf, writeXlf } from "../core/xlf/index.js";
 import { syncLocale } from "../core/sync.js";
 import { renderSummaryTable } from "../ui/table.js";
+import { buildGraveyardEntries } from "../core/graveyard.js";
+
+function resolveGraveyardPath(pattern: string, locale: string) {
+    return pattern.replaceAll("{locale}", locale);
+}
 
 export function registerSyncCommand(program: Command) {
     program
@@ -23,8 +28,6 @@ export function registerSyncCommand(program: Command) {
         )
         .action(async (opts) => {
             ui.headerBox("xlf-sync", "Sync XLIFF locale files");
-            console.log(); // ένα καθαρό κενό μετά
-
 
             const spinner = ora("Scanning files...").start();
 
@@ -45,7 +48,7 @@ export function registerSyncCommand(program: Command) {
                 const sourceXml = await readFile(res.sourcePath, "utf-8");
                 const sourceParsed = parseXlf(sourceXml);
 
-                // 3️⃣ Parse locale files + compute diff + (optionally) write
+                // 3️⃣ Parse locale files + compute diff + write (optional)
                 const rows: {
                     locale: string;
                     version: string;
@@ -65,15 +68,41 @@ export function registerSyncCommand(program: Command) {
                         obsolete: opts.obsolete,
                     });
 
-                    // Build output XML (same version as the locale file)
-                    const outputXml = writeXlf(parsed, diff.merged, diff.obsoleteKeys, {
+                    // Main locale output:
+                    // - merged never includes obsolete keys, so it stays clean.
+                    // - if obsolete=mark, writers will append obsolete entries into the main file.
+                    // - if obsolete=graveyard, we MUST NOT mark them inside main file.
+                    const mainObsoleteKeys = opts.obsolete === "mark" ? diff.obsoleteKeys : [];
+
+                    const mainOutputXml = writeXlf(parsed, diff.merged, mainObsoleteKeys, {
                         newTarget: opts.newTarget,
-                        obsolete: opts.obsolete,
+                        obsolete: opts.obsolete === "graveyard" ? "delete" : opts.obsolete,
                     });
 
-                    // Write only if not dry-run
                     if (!opts.dryRun) {
-                        await writeFile(lf.filePath, outputXml, "utf-8");
+                        await writeFile(lf.filePath, mainOutputXml, "utf-8");
+                    }
+
+                    // Graveyard output (only when obsolete=graveyard)
+                    if (opts.obsolete === "graveyard") {
+                        const graveyardEntries = buildGraveyardEntries(parsed, diff.obsoleteKeys);
+
+                        if (graveyardEntries.size > 0) {
+                            const graveyardPath = resolveGraveyardPath(opts.graveyardFile, lf.locale);
+
+                            // Write a file that contains ONLY the obsolete entries.
+                            // We pass obsoleteKeys=[] and obsolete=delete so nothing extra is appended.
+                            const graveyardXml = writeXlf(
+                                parsed,
+                                graveyardEntries,
+                                [],
+                                { newTarget: opts.newTarget, obsolete: "delete" }
+                            );
+
+                            if (!opts.dryRun) {
+                                await writeFile(graveyardPath, graveyardXml, "utf-8");
+                            }
+                        }
                     }
 
                     rows.push({
@@ -95,7 +124,11 @@ export function registerSyncCommand(program: Command) {
                 if (opts.dryRun) {
                     ui.success("Diff OK (dry-run)");
                 } else {
-                    ui.success("Sync OK (files updated)");
+                    ui.success(
+                        opts.obsolete === "graveyard"
+                            ? "Sync OK (files updated + graveyard written)"
+                            : "Sync OK (files updated)"
+                    );
                 }
             } catch (e: any) {
                 spinner.fail("Failed");

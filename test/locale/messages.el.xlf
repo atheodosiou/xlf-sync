@@ -1,21 +1,20 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <xliff version="1.2">
-  <file source-language="en" target-language="el" datatype="plaintext" original="ng2.template">
+  <file
+    source-language="en"
+    target-language="el"
+    datatype="plaintext"
+    original="ng2.template"
+  >
     <body>
       <trans-unit id="home.title">
         <source>Home</source>
         <target>Αρχική</target>
       </trans-unit>
 
-      <trans-unit id="home.subtitle">
-        <source>Welcome to the app</source>
-        <target>TODO</target>
-      </trans-unit>
-
       <trans-unit id="old.key">
-        <source>[OBSOLETE]</source>
-        <target state="obsolete">[OBSOLETE]</target>
-        <note>Marked obsolete by xlf-sync</note>
+        <source>Old</source>
+        <target>Παλιό</target>
       </trans-unit>
     </body>
   </file>
