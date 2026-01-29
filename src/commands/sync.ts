@@ -13,6 +13,16 @@ function resolveGraveyardPath(pattern: string, locale: string) {
     return pattern.replaceAll("{locale}", locale);
 }
 
+type Plan = {
+    lf: { locale: string; filePath: string };
+    parsed: any;
+    diff: any;
+    graveyardEntries: Map<string, any>;
+    mainOutputXml: string;
+    graveyardOutputXml?: string;
+    graveyardPath?: string;
+};
+
 export function registerSyncCommand(program: Command) {
     program
         .command("sync")
@@ -22,6 +32,7 @@ export function registerSyncCommand(program: Command) {
         .option("--dry-run", "Do not write files, only report changes", false)
         .option("--new-target <mode>", "todo | empty | source", "todo")
         .option("--obsolete <mode>", "delete | mark | graveyard", "mark")
+        .option("--fail-on-missing", "Fail if missing targets exist (no files written)", false)
         .option(
             "--graveyard-file <path>",
             "Graveyard output path pattern",
@@ -49,7 +60,6 @@ export function registerSyncCommand(program: Command) {
                 const sourceXml = await readFile(res.sourcePath, "utf-8");
                 const sourceParsed = parseXlf(sourceXml);
 
-                // 3️⃣ Per-locale sync
                 const rows: {
                     locale: string;
                     version: string;
@@ -60,6 +70,10 @@ export function registerSyncCommand(program: Command) {
                     missingTargets: number;
                 }[] = [];
 
+                const plans: Plan[] = [];
+                let hasMissing = false;
+
+                // 3️⃣ PASS 1: compute diff + prepare outputs (NO WRITES)
                 for (const lf of res.localeFiles) {
                     const localeXml = await readFile(lf.filePath, "utf-8");
                     const parsed = parseXlf(localeXml);
@@ -69,58 +83,7 @@ export function registerSyncCommand(program: Command) {
                         obsolete: opts.obsolete,
                     });
 
-                    // ✅ IMPORTANT: writers MUTATE rawDoc, so we CLONE before each write.
-                    // Also, build graveyard entries BEFORE any write mutates rawDoc.
-                    const graveyardEntries =
-                        opts.obsolete === "graveyard"
-                            ? buildGraveyardEntries(parsed, diff.obsoleteKeys)
-                            : new Map();
-
-                    // MAIN OUTPUT
-                    // - if obsolete=mark => append obsolete inside main
-                    // - if obsolete=graveyard => do NOT append obsolete inside main
-                    const mainObsoleteKeys = opts.obsolete === "mark" ? diff.obsoleteKeys : [];
-
-                    const mainParsedClone = {
-                        ...parsed,
-                        raw: structuredClone(parsed.raw),
-                    };
-
-                    const mainOutputXml = writeXlf(
-                        mainParsedClone,
-                        diff.merged,
-                        mainObsoleteKeys,
-                        {
-                            newTarget: opts.newTarget,
-                            // if graveyard, main behaves like delete (keeps file clean)
-                            obsolete: opts.obsolete === "graveyard" ? "delete" : opts.obsolete,
-                        }
-                    );
-
-                    if (!opts.dryRun) {
-                        await writeFile(lf.filePath, mainOutputXml, "utf-8");
-                    }
-
-                    // GRAVEYARD OUTPUT
-                    if (opts.obsolete === "graveyard" && graveyardEntries.size > 0) {
-                        const graveyardPath = resolveGraveyardPath(opts.graveyardFile, lf.locale);
-
-                        const graveParsedClone = {
-                            ...parsed,
-                            raw: structuredClone(parsed.raw),
-                        };
-
-                        const graveyardXml = writeXlf(
-                            graveParsedClone,
-                            graveyardEntries,
-                            [],
-                            { newTarget: opts.newTarget, obsolete: "delete" }
-                        );
-
-                        if (!opts.dryRun) {
-                            await writeFile(graveyardPath, graveyardXml, "utf-8");
-                        }
-                    }
+                    if (diff.missingTargets.length > 0) hasMissing = true;
 
                     rows.push({
                         locale: lf.locale,
@@ -131,11 +94,82 @@ export function registerSyncCommand(program: Command) {
                         obsolete: diff.obsoleteKeys.length,
                         missingTargets: diff.missingTargets.length,
                     });
+
+                    // Build graveyard entries BEFORE any write (writers mutate rawDoc)
+                    const graveyardEntries =
+                        opts.obsolete === "graveyard"
+                            ? buildGraveyardEntries(parsed, diff.obsoleteKeys)
+                            : new Map();
+
+                    // MAIN OUTPUT:
+                    // - obsolete=mark => append obsolete inside main file
+                    // - obsolete=graveyard => do NOT append obsolete inside main file
+                    const mainObsoleteKeys = opts.obsolete === "mark" ? diff.obsoleteKeys : [];
+
+                    const mainParsedClone = {
+                        ...parsed,
+                        raw: structuredClone(parsed.raw),
+                    };
+
+                    const mainOutputXml = writeXlf(mainParsedClone, diff.merged, mainObsoleteKeys, {
+                        newTarget: opts.newTarget,
+                        // if graveyard, main behaves like delete (keeps file clean)
+                        obsolete: opts.obsolete === "graveyard" ? "delete" : opts.obsolete,
+                    });
+
+                    // GRAVEYARD OUTPUT (if needed)
+                    let graveyardOutputXml: string | undefined;
+                    let graveyardPath: string | undefined;
+
+                    if (opts.obsolete === "graveyard" && graveyardEntries.size > 0) {
+                        graveyardPath = resolveGraveyardPath(opts.graveyardFile, lf.locale);
+
+                        const graveParsedClone = {
+                            ...parsed,
+                            raw: structuredClone(parsed.raw),
+                        };
+
+                        graveyardOutputXml = writeXlf(graveParsedClone, graveyardEntries, [], {
+                            newTarget: opts.newTarget,
+                            obsolete: "delete",
+                        });
+                    }
+
+                    plans.push({
+                        lf,
+                        parsed,
+                        diff,
+                        graveyardEntries,
+                        mainOutputXml,
+                        graveyardOutputXml,
+                        graveyardPath,
+                    });
                 }
 
                 spinner.stop();
 
+                // 4️⃣ Render summary table
                 renderSummaryTable(rows);
+
+                // 5️⃣ FAIL GATE (no partial writes)
+                if (opts.failOnMissing && hasMissing) {
+                    ui.error(
+                        "Sync failed: missing targets. Fix translations or choose a different --new-target strategy."
+                    );
+                    process.exitCode = 1;
+                    return;
+                }
+
+                // 6️⃣ PASS 2: write files (if not dry-run)
+                if (!opts.dryRun) {
+                    for (const p of plans) {
+                        await writeFile(p.lf.filePath, p.mainOutputXml, "utf-8");
+
+                        if (opts.obsolete === "graveyard" && p.graveyardOutputXml && p.graveyardPath) {
+                            await writeFile(p.graveyardPath, p.graveyardOutputXml, "utf-8");
+                        }
+                    }
+                }
 
                 if (opts.dryRun) {
                     ui.success("Diff OK (dry-run)");

@@ -18,6 +18,7 @@ export function registerCheckCommand(program: Command) {
         .option("--fail-on-obsolete", "Exit non-zero if obsolete keys exist", false)
         .option("--fail-on-added", "Exit non-zero if new keys would be added", false)
         .option("--new-target <mode>", "todo | empty | source (used for diff only)", "todo")
+        .option("--verbose", "Print missing keys per locale", false)
         .action(async (opts) => {
             renderBanner("check");
 
@@ -33,6 +34,8 @@ export function registerCheckCommand(program: Command) {
                 const sourceParsed = parseXlf(sourceXml);
 
                 const rows: any[] = [];
+                const missingKeysByLocale: Record<string, string[]> = {};
+
                 let hasMissing = false;
                 let hasObsolete = false;
                 let hasAdded = false;
@@ -43,6 +46,7 @@ export function registerCheckCommand(program: Command) {
 
                     const diff = syncLocale(sourceParsed.entries, parsed.entries, {
                         newTarget: opts.newTarget,
+                        // For check: we only want detection, not modifications
                         obsolete: "delete",
                     });
 
@@ -50,7 +54,10 @@ export function registerCheckCommand(program: Command) {
                     const obsolete = diff.obsoleteKeys.length;
                     const added = diff.addedKeys.length;
 
-                    if (missingTargets > 0) hasMissing = true;
+                    if (missingTargets > 0) {
+                        hasMissing = true;
+                        missingKeysByLocale[lf.locale] = diff.missingTargets.slice();
+                    }
                     if (obsolete > 0) hasObsolete = true;
                     if (added > 0) hasAdded = true;
 
@@ -67,6 +74,21 @@ export function registerCheckCommand(program: Command) {
 
                 spinner.stop();
                 renderSummaryTable(rows);
+
+                if (opts.verbose) {
+                    const locales = Object.keys(missingKeysByLocale);
+                    if (locales.length === 0) {
+                        ui.success("No missing targets.");
+                    } else {
+                        ui.info("Missing targets:");
+                        for (const locale of locales) {
+                            ui.info(`- ${locale}:`);
+                            for (const key of missingKeysByLocale[locale]) {
+                                ui.info(`  • ${key}`);
+                            }
+                        }
+                    }
+                }
 
                 const reasons: string[] = [];
                 if (opts.failOnMissing && hasMissing) reasons.push("missing targets");
