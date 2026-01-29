@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { ui } from "../ui/console.js";
+import { renderBanner } from "../ui/banner.js";
 
 export function registerReportCommand(program: Command) {
     program
@@ -10,6 +11,7 @@ export function registerReportCommand(program: Command) {
         .option("--format <fmt>", "table | json", "table")
         .action(async (opts) => {
             // TODO: implement
+            renderBanner("report");
             ui.success(`Report generated (stub, format=${opts.format})`);
         });
 }

@@ -7,6 +7,7 @@ import { parseXlf, writeXlf } from "../core/xlf/index.js";
 import { syncLocale } from "../core/sync.js";
 import { renderSummaryTable } from "../ui/table.js";
 import { buildGraveyardEntries } from "../core/graveyard.js";
+import { renderBanner } from "../ui/banner.js";
 
 function resolveGraveyardPath(pattern: string, locale: string) {
     return pattern.replaceAll("{locale}", locale);
@@ -27,7 +28,7 @@ export function registerSyncCommand(program: Command) {
             "src/locale/_obsolete.{locale}.xlf"
         )
         .action(async (opts) => {
-            ui.headerBox("xlf-sync", "Sync XLIFF locale files");
+            renderBanner("sync");
 
             const spinner = ora("Scanning files...").start();
 

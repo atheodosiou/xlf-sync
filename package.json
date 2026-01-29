@@ -23,6 +23,7 @@
     "commander": "^14.0.2",
     "fast-glob": "^3.3.3",
     "fast-xml-parser": "^5.3.3",
+    "figlet": "^1.10.0",
     "log-symbols": "^7.0.1",
     "ora": "^9.1.0"
   },

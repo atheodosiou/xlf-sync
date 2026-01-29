@@ -6,6 +6,7 @@ import { readFile } from "node:fs/promises";
 import { parseXlf } from "../core/xlf/index.js";
 import { syncLocale } from "../core/sync.js";
 import { renderSummaryTable } from "../ui/table.js";
+import { renderBanner } from "../ui/banner.js";
 
 export function registerCheckCommand(program: Command) {
     program
@@ -18,7 +19,7 @@ export function registerCheckCommand(program: Command) {
         .option("--fail-on-added", "Exit non-zero if new keys would be added", false)
         .option("--new-target <mode>", "todo | empty | source (used for diff only)", "todo")
         .action(async (opts) => {
-            ui.headerBox("xlf-sync", "Check XLIFF locale files");
+            renderBanner("check");
 
             const spinner = ora("Checking...").start();
 
