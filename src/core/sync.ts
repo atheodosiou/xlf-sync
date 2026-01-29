@@ -44,13 +44,14 @@ export function syncLocale(
             if (!targetXml || targetXml.trim() === "") missingTargets.push(key);
         } else {
             // add new entry
+            const targetXml = makeNewTarget(srcEntry.sourceXml, opts.newTarget);
             merged.set(key, {
                 key,
                 sourceXml: srcEntry.sourceXml,
-                targetXml: makeNewTarget(srcEntry.sourceXml, opts.newTarget),
+                targetXml,
             });
             addedKeys.push(key);
-            missingTargets.push(key);
+            if (!targetXml || targetXml.trim() === "") missingTargets.push(key);
         }
     }
 

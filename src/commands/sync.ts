@@ -15,9 +15,6 @@ function resolveGraveyardPath(pattern: string, locale: string) {
 
 type Plan = {
     lf: { locale: string; filePath: string };
-    parsed: any;
-    diff: any;
-    graveyardEntries: Map<string, any>;
     mainOutputXml: string;
     graveyardOutputXml?: string;
     graveyardPath?: string;
@@ -73,7 +70,7 @@ export function registerSyncCommand(program: Command) {
                 const plans: Plan[] = [];
                 let hasMissing = false;
 
-                // 3️⃣ PASS 1: compute diff + prepare outputs (NO WRITES)
+                // 3️⃣ PASS 1: compute diffs + prepare outputs (NO WRITES)
                 for (const lf of res.localeFiles) {
                     const localeXml = await readFile(lf.filePath, "utf-8");
                     const parsed = parseXlf(localeXml);
@@ -95,15 +92,7 @@ export function registerSyncCommand(program: Command) {
                         missingTargets: diff.missingTargets.length,
                     });
 
-                    // Build graveyard entries BEFORE any write (writers mutate rawDoc)
-                    const graveyardEntries =
-                        opts.obsolete === "graveyard"
-                            ? buildGraveyardEntries(parsed, diff.obsoleteKeys)
-                            : new Map();
-
-                    // MAIN OUTPUT:
-                    // - obsolete=mark => append obsolete inside main file
-                    // - obsolete=graveyard => do NOT append obsolete inside main file
+                    // MAIN OUTPUT
                     const mainObsoleteKeys = opts.obsolete === "mark" ? diff.obsoleteKeys : [];
 
                     const mainParsedClone = {
@@ -117,29 +106,30 @@ export function registerSyncCommand(program: Command) {
                         obsolete: opts.obsolete === "graveyard" ? "delete" : opts.obsolete,
                     });
 
-                    // GRAVEYARD OUTPUT (if needed)
+                    // GRAVEYARD OUTPUT (optional)
                     let graveyardOutputXml: string | undefined;
                     let graveyardPath: string | undefined;
 
-                    if (opts.obsolete === "graveyard" && graveyardEntries.size > 0) {
-                        graveyardPath = resolveGraveyardPath(opts.graveyardFile, lf.locale);
+                    if (opts.obsolete === "graveyard" && diff.obsoleteKeys.length > 0) {
+                        const graveyardEntries = buildGraveyardEntries(parsed, diff.obsoleteKeys);
 
-                        const graveParsedClone = {
-                            ...parsed,
-                            raw: structuredClone(parsed.raw),
-                        };
+                        if (graveyardEntries.size > 0) {
+                            graveyardPath = resolveGraveyardPath(opts.graveyardFile, lf.locale);
 
-                        graveyardOutputXml = writeXlf(graveParsedClone, graveyardEntries, [], {
-                            newTarget: opts.newTarget,
-                            obsolete: "delete",
-                        });
+                            const graveParsedClone = {
+                                ...parsed,
+                                raw: structuredClone(parsed.raw),
+                            };
+
+                            graveyardOutputXml = writeXlf(graveParsedClone, graveyardEntries, [], {
+                                newTarget: opts.newTarget,
+                                obsolete: "delete",
+                            });
+                        }
                     }
 
                     plans.push({
                         lf,
-                        parsed,
-                        diff,
-                        graveyardEntries,
                         mainOutputXml,
                         graveyardOutputXml,
                         graveyardPath,
@@ -151,7 +141,7 @@ export function registerSyncCommand(program: Command) {
                 // 4️⃣ Render summary table
                 renderSummaryTable(rows);
 
-                // 5️⃣ FAIL GATE (no partial writes)
+                // 5️⃣ FAIL GATE (prevents partial writes)
                 if (opts.failOnMissing && hasMissing) {
                     ui.error(
                         "Sync failed: missing targets. Fix translations or choose a different --new-target strategy."
@@ -160,7 +150,7 @@ export function registerSyncCommand(program: Command) {
                     return;
                 }
 
-                // 6️⃣ PASS 2: write files (if not dry-run)
+                // 6️⃣ PASS 2: write outputs
                 if (!opts.dryRun) {
                     for (const p of plans) {
                         await writeFile(p.lf.filePath, p.mainOutputXml, "utf-8");
