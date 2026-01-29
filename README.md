@@ -150,6 +150,23 @@ Add this step to your Pull Request validation workflow to ensure no developer me
 
 ---
 
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Whether it's bug reports, feature requests, or code contributions, your help is appreciated.
+
+Please read our [Contributing Guidelines](CONTRIBUTING.md) to get started.
+
+**Quick ways to contribute:**
+- ⭐ [Star the project](https://github.com/atheodosiou/xlf-sync) on GitHub
+- 🐛 [Report bugs](https://github.com/atheodosiou/xlf-sync/issues/new)
+- 💡 [Suggest features](https://github.com/atheodosiou/xlf-sync/issues/new)
+- 🔧 [Submit pull requests](https://github.com/atheodosiou/xlf-sync/pulls)
+
+---
+
 ## 📄 License
 
 MIT © Anastasios Theodosiou
