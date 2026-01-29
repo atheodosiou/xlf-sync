@@ -42,6 +42,9 @@ export function parseV12(doc: any): ParsedXlf {
 function toXmlText(v: any): string {
     if (v === null || v === undefined) return "";
     if (typeof v === "string") return v;
+    if (typeof v === "object") {
+        if (typeof v["#text"] === "string") return v["#text"];
+    }
     // fast-xml-parser can produce objects for mixed content; fallback:
     return String(v);
 }

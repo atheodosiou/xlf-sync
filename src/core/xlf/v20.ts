@@ -46,5 +46,9 @@ export function parseV20(doc: any): ParsedXlf {
 function toXmlText(v: any): string {
     if (v === null || v === undefined) return "";
     if (typeof v === "string") return v;
+    if (typeof v === "object") {
+        if (typeof v["#text"] === "string") return v["#text"];
+        // fallback for other usage, though mostly #text is the key
+    }
     return String(v);
 }
