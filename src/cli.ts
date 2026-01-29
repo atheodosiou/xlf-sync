@@ -21,6 +21,3 @@ registerCheckCommand(program);
 registerReportCommand(program);
 
 program.parse(process.argv);
-
-
-// https://chatgpt.com/c/6978c595-664c-8328-9756-4a51d628277b
