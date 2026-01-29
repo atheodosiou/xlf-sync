@@ -48,7 +48,7 @@ export function registerSyncCommand(program: Command) {
                 const sourceXml = await readFile(res.sourcePath, "utf-8");
                 const sourceParsed = parseXlf(sourceXml);
 
-                // 3️⃣ Parse locale files + compute diff + write (optional)
+                // 3️⃣ Per-locale sync
                 const rows: {
                     locale: string;
                     version: string;
@@ -60,48 +60,64 @@ export function registerSyncCommand(program: Command) {
                 }[] = [];
 
                 for (const lf of res.localeFiles) {
-                    const xml = await readFile(lf.filePath, "utf-8");
-                    const parsed = parseXlf(xml);
+                    const localeXml = await readFile(lf.filePath, "utf-8");
+                    const parsed = parseXlf(localeXml);
 
                     const diff = syncLocale(sourceParsed.entries, parsed.entries, {
                         newTarget: opts.newTarget,
                         obsolete: opts.obsolete,
                     });
 
-                    // Main locale output:
-                    // - merged never includes obsolete keys, so it stays clean.
-                    // - if obsolete=mark, writers will append obsolete entries into the main file.
-                    // - if obsolete=graveyard, we MUST NOT mark them inside main file.
+                    // ✅ IMPORTANT: writers MUTATE rawDoc, so we CLONE before each write.
+                    // Also, build graveyard entries BEFORE any write mutates rawDoc.
+                    const graveyardEntries =
+                        opts.obsolete === "graveyard"
+                            ? buildGraveyardEntries(parsed, diff.obsoleteKeys)
+                            : new Map();
+
+                    // MAIN OUTPUT
+                    // - if obsolete=mark => append obsolete inside main
+                    // - if obsolete=graveyard => do NOT append obsolete inside main
                     const mainObsoleteKeys = opts.obsolete === "mark" ? diff.obsoleteKeys : [];
 
-                    const mainOutputXml = writeXlf(parsed, diff.merged, mainObsoleteKeys, {
-                        newTarget: opts.newTarget,
-                        obsolete: opts.obsolete === "graveyard" ? "delete" : opts.obsolete,
-                    });
+                    const mainParsedClone = {
+                        ...parsed,
+                        raw: structuredClone(parsed.raw),
+                    };
+
+                    const mainOutputXml = writeXlf(
+                        mainParsedClone,
+                        diff.merged,
+                        mainObsoleteKeys,
+                        {
+                            newTarget: opts.newTarget,
+                            // if graveyard, main behaves like delete (keeps file clean)
+                            obsolete: opts.obsolete === "graveyard" ? "delete" : opts.obsolete,
+                        }
+                    );
 
                     if (!opts.dryRun) {
                         await writeFile(lf.filePath, mainOutputXml, "utf-8");
                     }
 
-                    // Graveyard output (only when obsolete=graveyard)
-                    if (opts.obsolete === "graveyard") {
-                        const graveyardEntries = buildGraveyardEntries(parsed, diff.obsoleteKeys);
+                    // GRAVEYARD OUTPUT
+                    if (opts.obsolete === "graveyard" && graveyardEntries.size > 0) {
+                        const graveyardPath = resolveGraveyardPath(opts.graveyardFile, lf.locale);
 
-                        if (graveyardEntries.size > 0) {
-                            const graveyardPath = resolveGraveyardPath(opts.graveyardFile, lf.locale);
+                        const graveParsedClone = {
+                            ...parsed,
+                            raw: structuredClone(parsed.raw),
+                        };
 
-                            // Write a file that contains ONLY the obsolete entries.
-                            // We pass obsoleteKeys=[] and obsolete=delete so nothing extra is appended.
-                            const graveyardXml = writeXlf(
-                                parsed,
-                                graveyardEntries,
-                                [],
-                                { newTarget: opts.newTarget, obsolete: "delete" }
-                            );
+                        const graveyardXml = writeXlf(
+                            graveParsedClone,
+                            graveyardEntries,
+                            [],
+                            { newTarget: opts.newTarget, obsolete: "delete" }
+                        );
 
-                            if (!opts.dryRun) {
-                                await writeFile(graveyardPath, graveyardXml, "utf-8");
-                            }
+                        if (!opts.dryRun) {
+                            await writeFile(graveyardPath, graveyardXml, "utf-8");
                         }
                     }
 
@@ -118,7 +134,6 @@ export function registerSyncCommand(program: Command) {
 
                 spinner.stop();
 
-                // 4️⃣ Render summary table
                 renderSummaryTable(rows);
 
                 if (opts.dryRun) {
