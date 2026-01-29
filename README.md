@@ -63,7 +63,37 @@ npx xlf-sync sync \
 
 ---
 
-### 2. The `check` Command
+
+---
+
+### 2. The `report` Command
+
+Generates a detailed console report about the translation coverage for each locale file. Useful for getting a quick overview of work remaining.
+
+```bash
+npx xlf-sync report --source src/locale/messages.xlf --locales "src/locale/messages.*.xlf"
+```
+
+**Output Example:**
+```text
+┌────────┬─────┬──────┬────────────┬─────────┬────────┬───────┐
+│ Locale │ XLF │ Keys │ Translated │ Pending │ % Cov  │ Words │
+├────────┼─────┼──────┼────────────┼─────────┼────────┼───────┤
+│ de     │ 2.0 │ 120  │ 115        │ 5       │ 95.8%  │ 432   │
+│ fr     │ 2.0 │ 120  │ 40         │ 80      │ 33.3%  │ 150   │
+└────────┴─────┴──────┴────────────┴─────────┴────────┴───────┘
+```
+
+#### Report Options
+
+| Option | Default | Description |
+| :--- | :--- | :--- |
+| `--source <path>` | `src/locale/messages.xlf` | Path to the source XLIFF file. |
+| `--locales <glob>` | `src/locale/messages.*.xlf` | Glob pattern for target locale files. |
+
+---
+
+### 3. The `check` Command
 
 A read-only command designed for **Continuous Integration (CI)** pipelines. It verifies the state of your translations without modifying any files.
 

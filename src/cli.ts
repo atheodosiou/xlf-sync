@@ -3,13 +3,18 @@ import { Command } from "commander";
 import { registerCheckCommand } from "./commands/check";
 import { registerReportCommand } from "./commands/report";
 import { registerSyncCommand } from "./commands/sync";
+import { getBanner } from "./ui/banner";
 
 const program = new Command();
 
 program
     .name("xlf-sync")
-    .description("Sync Angular XLIFF (1.2 & 2.0) locale files with messages.xlf")
-    .version("0.1.0");
+    .description(
+        "A powerful CLI tool to keep your Angular XLIFF translation files (1.2 & 2.0) in sync with your source messages.\n\n" +
+        "Automatically merges new translations, marks obsolete keys, and validates structure."
+    )
+    .version("1.0.1")
+    .addHelpText("before", getBanner());
 
 registerSyncCommand(program);
 registerCheckCommand(program);
