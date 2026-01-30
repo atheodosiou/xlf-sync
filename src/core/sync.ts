@@ -67,8 +67,7 @@ export function syncLocale(
 }
 
 function makeNewTarget(sourceXml: string, mode: NewTargetMode): string | undefined {
-    if (mode === "empty") return undefined;
+    if (mode === "empty") return "";
     if (mode === "source") return sourceXml;
-    // todo
     return "TODO";
 }
