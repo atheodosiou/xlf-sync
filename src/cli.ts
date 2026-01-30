@@ -3,6 +3,7 @@ import { Command } from "commander";
 import { registerCheckCommand } from "./commands/check";
 import { registerReportCommand } from "./commands/report";
 import { registerSyncCommand } from "./commands/sync";
+import { registerDashboardCommand } from "./commands/dashboard";
 import pkg from "../package.json";
 import { getBanner } from "./ui/banner";
 
@@ -20,5 +21,6 @@ program
 registerSyncCommand(program);
 registerCheckCommand(program);
 registerReportCommand(program);
+registerDashboardCommand(program);
 
 program.parse(process.argv);

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XLF-SYNC | Translation Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        [x-cloak] { display: none !important; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="h-full" x-data="dashboard">
+    <div class="min-h-full">
+        <nav class="bg-white border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 flex items-center gap-2">
+                            <span class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-sky-600 to-blue-700 uppercase tracking-tight">XLF-Sync</span>
+                            <span class="px-2 py-0.5 text-[10px] font-bold bg-primary-50 text-primary-700 rounded border border-primary-100">V1.2.0</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center text-xs font-medium text-gray-400">
+                        1/31/2026, 12:25:02 AM
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <header class="py-10">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Translation Dashboard</h1>
+                <p class="mt-2 text-sm text-gray-500">Analyze coverage and track missing keys across all supported locales.</p>
+            </div>
+        </header>
+
+        <main class="pb-12">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                
+                <!-- Stats Overview -->
+                <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-10">
+                    <div class="bg-white overflow-hidden shadow-sm rounded-2xl border border-gray-200 p-6 flex items-center gap-4">
+                        <div class="bg-sky-50 p-3 rounded-xl text-sky-600">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Locales</p>
+                            <p class="text-2xl font-black text-gray-900" x-text="stats.length"></p>
+                        </div>
+                    </div>
+                    <div class="bg-white overflow-hidden shadow-sm rounded-2xl border border-gray-200 p-6 flex items-center gap-4">
+                        <div class="bg-indigo-50 p-3 rounded-xl text-indigo-600">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16" /></svg>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Keys</p>
+                            <p class="text-2xl font-black text-gray-900" x-text="matrix.length"></p>
+                        </div>
+                    </div>
+                    <div class="bg-white overflow-hidden shadow-sm rounded-2xl border border-gray-200 p-6 flex items-center gap-4">
+                        <div class="bg-emerald-50 p-3 rounded-xl text-emerald-600">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Translated</p>
+                            <p class="text-2xl font-black text-gray-900" x-text="translatedKeysCount"></p>
+                        </div>
+                    </div>
+                    <div class="bg-white overflow-hidden shadow-sm rounded-2xl border border-gray-200 p-6 flex items-center gap-4 text-amber-600">
+                        <div class="bg-amber-50 p-3 rounded-xl">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Pending</p>
+                            <p class="text-2xl font-black" x-text="pendingKeysCount"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Locale Stats Table -->
+                <div class="bg-white shadow-sm rounded-2xl overflow-hidden border border-gray-200 mb-10">
+                    <div class="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                        <h2 class="text-sm font-bold text-gray-900 uppercase tracking-widest">Locale Coverage</h2>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50 uppercase text-[10px] font-black text-gray-400 tracking-widest">
+                                <tr>
+                                    <th class="px-6 py-4 text-left">Locale</th>
+                                    <th class="px-6 py-4 text-center">Version</th>
+                                    <th class="px-6 py-4 text-center">Total Keys</th>
+                                    <th class="px-6 py-4 text-center">Pending</th>
+                                    <th class="px-6 py-4 text-left">Coverage</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 bg-white">
+                                <template x-for="row in stats" :key="row.locale">
+                                    <tr class="hover:bg-gray-50/50 transition-colors">
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center gap-3">
+                                                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-100 text-primary-700 font-bold text-xs uppercase" x-text="row.locale"></span>
+                                                <span class="text-sm font-bold text-gray-700 uppercase" x-text="row.locale"></span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 text-center">
+                                            <span class="text-[10px] font-bold px-2 py-1 bg-gray-100 rounded-md text-gray-500 mono" x-text="row.version"></span>
+                                        </td>
+                                        <td class="px-6 py-4 text-center text-sm font-bold text-gray-900 mono" x-text="row.keys"></td>
+                                        <td class="px-6 py-4 text-center text-sm font-bold mono" :class="row.pending > 0 ? 'text-amber-500' : 'text-emerald-500'" x-text="row.pending"></td>
+                                        <td class="px-6 py-4 min-w-[200px]">
+                                            <div class="flex items-center gap-4">
+                                                <div class="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
+                                                    <div class="h-full rounded-full transition-all duration-700" 
+                                                        :class="parseFloat(row.percentage) === 100 ? 'bg-emerald-500' : 'bg-primary-600'"
+                                                        :style="'width: ' + row.percentage"></div>
+                                                </div>
+                                                <span class="text-xs font-black text-gray-900 mono w-12 text-right" x-text="row.percentage"></span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Keys Matrix Table -->
+                <div class="bg-white shadow-sm rounded-2xl overflow-hidden border border-gray-200">
+                    <div class="px-6 py-5 border-b border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4 bg-gray-50/50">
+                        <h2 class="text-sm font-bold text-gray-900 uppercase tracking-widest">Translation Matrix</h2>
+                        <div class="relative w-full md:w-80">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                            </div>
+                            <input type="text" x-model="searchMatrix" placeholder="Filter by Key ID..." 
+                                class="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-xl leading-5 bg-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all">
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
+                        <table class="min-w-full divide-y divide-gray-200 sticky-header">
+                            <thead class="bg-gray-50 uppercase text-[10px] font-black text-gray-400 tracking-widest sticky top-0 z-10 shadow-sm">
+                                <tr>
+                                    <th class="px-6 py-4 text-left bg-gray-50">Translation Key ID</th>
+                                    <template x-for="locale in locales">
+                                        <th class="px-4 py-4 text-center bg-gray-50" x-text="locale"></th>
+                                    </template>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 bg-white">
+                                <template x-for="entry in filteredMatrix" :key="entry.id">
+                                    <tr class="hover:bg-primary-50/30 transition-colors">
+                                        <td class="px-6 py-3 whitespace-nowrap text-xs font-medium text-gray-900 mono select-all" x-text="entry.id"></td>
+                                        <template x-for="locale in locales">
+                                            <td class="px-4 py-3 text-center">
+                                                <div class="flex justify-center">
+                                                    <template x-if="entry.locales[locale]">
+                                                        <span class="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
+                                                        </span>
+                                                    </template>
+                                                    <template x-if="!entry.locales[locale]">
+                                                        <span class="flex h-6 w-6 items-center justify-center rounded-full bg-red-50 text-red-500">
+                                                            <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" /></svg>
+                                                        </span>
+                                                    </template>
+                                                </div>
+                                            </td>
+                                        </template>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 text-[10px] font-bold text-gray-400 tracking-widest flex justify-between items-center">
+                        <div x-text="'Showing ' + filteredMatrix.length + ' of ' + matrix.length + ' keys'"></div>
+                        <div>(Tip: Select Key ID to copy)</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('dashboard', () => {
+                const data = {"stats":[{"locale":"de","version":"2.0","total":2,"done":2,"todo":0,"coverage":100,"words":2,"keys":2,"pending":0,"percentage":"100.0%"},{"locale":"el","version":"1.2","total":2,"done":2,"todo":0,"coverage":100,"words":2,"keys":2,"pending":0,"percentage":"100.0%"}],"matrix":[{"id":"home.title","locales":{"de":true,"el":true}},{"id":"home.subtitle","locales":{"de":false,"el":false}}],"locales":["de","el"]};
+                return {
+                    stats: data.stats,
+                    matrix: data.matrix,
+                    locales: data.locales,
+                    searchMatrix: '',
+                    get filteredMatrix() {
+                        const q = this.searchMatrix.toLowerCase();
+                        if (!q) return this.matrix;
+                        return this.matrix.filter(m => m.id.toLowerCase().includes(q));
+                    },
+                    get translatedKeysCount() {
+                        // Count a key as translated if it is translated in AT LEAST ONE locale
+                        return this.matrix.filter(m => Object.values(m.locales).some(v => v)).length;
+                    },
+                    get pendingKeysCount() {
+                        // Count a key as pending if it is missing in AT LEAST ONE locale
+                        return this.matrix.filter(m => Object.values(m.locales).some(v => !v)).length;
+                    }
+                };
+            });
+        });
+    </script>
+</body>
+</html>

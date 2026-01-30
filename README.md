@@ -137,7 +137,25 @@ npx xlf-sync report --source src/locale/messages.xlf --locales "src/locale/messa
 
 ---
 
-### 3. The `check` Command
+### 3. The `dashboard` Command
+
+Generates a modern, standalone **HTML dashboard** to visualize your translation progress with beautiful charts and tables.
+
+```bash
+npx xlf-sync dashboard --out report.html
+```
+
+#### Dashboard Options
+
+| Option | Default | Description |
+| :--- | :--- | :--- |
+| `--source <path>` | `src/locale/messages.xlf` | Path to the source XLIFF file. |
+| `--locales <glob>` | `src/locale/messages.*.xlf` | Glob pattern for target locale files. |
+| `--out <path>` | `xlf-report.html` | Path where the HTML file will be saved. |
+
+---
+
+### 4. The `check` Command
 
 A read-only command designed for **Continuous Integration (CI)** pipelines. It verifies the state of your translations without modifying any files.
 
