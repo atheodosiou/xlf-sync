@@ -39,6 +39,65 @@ export type SyncPlan = {
     };
 };
 
+export async function preparePlans(
+    res: { sourcePath: string; localeFiles: { locale: string; filePath: string }[] },
+    opts: SyncOptions
+): Promise<SyncPlan[]> {
+    const sourceXml = await readFile(res.sourcePath, "utf-8");
+    const sourceParsed = parseXlf(sourceXml);
+    const plans: SyncPlan[] = [];
+
+    for (const lf of res.localeFiles) {
+        const localeXml = await readFile(lf.filePath, "utf-8");
+        const parsed = parseXlf(localeXml);
+
+        const diff = syncLocale(sourceParsed.entries, parsed.entries, {
+            newTarget: opts.newTarget,
+            obsolete: opts.obsolete,
+        });
+
+        const mainObsoleteKeys = opts.obsolete === "mark" ? diff.obsoleteKeys : [];
+        const mainParsedClone = { ...parsed, raw: structuredClone(parsed.raw) };
+
+        const mainOutputXml = writeXlf(mainParsedClone, diff.merged, mainObsoleteKeys, {
+            newTarget: opts.newTarget,
+            obsolete: opts.obsolete === "graveyard" ? "delete" : opts.obsolete,
+        });
+
+        let graveyardOutputXml: string | undefined;
+        let graveyardPath: string | undefined;
+
+        if (opts.obsolete === "graveyard" && diff.obsoleteKeys.length > 0) {
+            const graveyardEntries = buildGraveyardEntries(parsed, diff.obsoleteKeys);
+            if (graveyardEntries.size > 0) {
+                graveyardPath = resolveGraveyardPath(opts.graveyardFile, lf.locale);
+                const graveParsedClone = { ...parsed, raw: structuredClone(parsed.raw) };
+                graveyardOutputXml = writeXlf(graveParsedClone, graveyardEntries, [], {
+                    newTarget: opts.newTarget,
+                    obsolete: "delete",
+                });
+            }
+        }
+
+        plans.push({
+            lf,
+            mainOutputXml,
+            graveyardOutputXml,
+            graveyardPath,
+            stats: {
+                locale: lf.locale,
+                version: parsed.version,
+                sourceKeys: sourceParsed.entries.size,
+                localeKeys: parsed.entries.size,
+                added: diff.addedKeys.length,
+                obsolete: diff.obsoleteKeys.length,
+                missingTargets: diff.missingTargets.length,
+            },
+        });
+    }
+    return plans;
+}
+
 export function registerSyncCommand(program: Command) {
     program
         .command("sync")
@@ -60,7 +119,6 @@ export function registerSyncCommand(program: Command) {
             const spinner = ora("Scanning files...").start();
 
             try {
-                // 1️⃣ Discover source + locale files
                 const res = await discoverFiles({
                     sourcePath: opts.source,
                     localesGlob: opts.locales,
@@ -68,113 +126,24 @@ export function registerSyncCommand(program: Command) {
 
                 spinner.succeed(`Found ${res.localeFiles.length} locale file(s)`);
 
-                for (const lf of res.localeFiles) {
-                    ui.info(`- ${lf.locale}: ${lf.filePath}`);
-                }
+                const plans = await preparePlans(res, opts as SyncOptions);
 
-                // 2️⃣ Parse source file
-                const sourceXml = await readFile(res.sourcePath, "utf-8");
-                const sourceParsed = parseXlf(sourceXml);
-
-                const rows: {
-                    locale: string;
-                    version: string;
-                    sourceKeys: number;
-                    localeKeys: number;
-                    added: number;
-                    obsolete: number;
-                    missingTargets: number;
-                }[] = [];
-
-                const plans: Plan[] = [];
-                let hasMissing = false;
-
-                // 3️⃣ PASS 1: compute diffs + prepare outputs (NO WRITES)
-                for (const lf of res.localeFiles) {
-                    const localeXml = await readFile(lf.filePath, "utf-8");
-                    const parsed = parseXlf(localeXml);
-
-                    const diff = syncLocale(sourceParsed.entries, parsed.entries, {
-                        newTarget: opts.newTarget,
-                        obsolete: opts.obsolete,
-                    });
-
-                    if (diff.missingTargets.length > 0) hasMissing = true;
-
-                    rows.push({
-                        locale: lf.locale,
-                        version: parsed.version,
-                        sourceKeys: sourceParsed.entries.size,
-                        localeKeys: parsed.entries.size,
-                        added: diff.addedKeys.length,
-                        obsolete: diff.obsoleteKeys.length,
-                        missingTargets: diff.missingTargets.length,
-                    });
-
-                    // MAIN OUTPUT
-                    const mainObsoleteKeys = opts.obsolete === "mark" ? diff.obsoleteKeys : [];
-
-                    const mainParsedClone = {
-                        ...parsed,
-                        raw: structuredClone(parsed.raw),
-                    };
-
-                    const mainOutputXml = writeXlf(mainParsedClone, diff.merged, mainObsoleteKeys, {
-                        newTarget: opts.newTarget,
-                        // if graveyard, main behaves like delete (keeps file clean)
-                        obsolete: opts.obsolete === "graveyard" ? "delete" : opts.obsolete,
-                    });
-
-                    // GRAVEYARD OUTPUT (optional)
-                    let graveyardOutputXml: string | undefined;
-                    let graveyardPath: string | undefined;
-
-                    if (opts.obsolete === "graveyard" && diff.obsoleteKeys.length > 0) {
-                        const graveyardEntries = buildGraveyardEntries(parsed, diff.obsoleteKeys);
-
-                        if (graveyardEntries.size > 0) {
-                            graveyardPath = resolveGraveyardPath(opts.graveyardFile, lf.locale);
-
-                            const graveParsedClone = {
-                                ...parsed,
-                                raw: structuredClone(parsed.raw),
-                            };
-
-                            graveyardOutputXml = writeXlf(graveParsedClone, graveyardEntries, [], {
-                                newTarget: opts.newTarget,
-                                obsolete: "delete",
-                            });
-                        }
-                    }
-
-                    plans.push({
-                        lf,
-                        mainOutputXml,
-                        graveyardOutputXml,
-                        graveyardPath,
-                    });
-                }
+                const rows = plans.map(p => p.stats);
+                const hasMissing = plans.some(p => p.stats.missingTargets > 0);
 
                 spinner.stop();
-
-                // 4️⃣ Render summary table
                 renderSummaryTable(rows);
 
-                // 5️⃣ FAIL GATE (prevents partial writes)
                 if (opts.failOnMissing && hasMissing) {
-                    ui.error(
-                        "Sync failed: missing targets. Fix translations or choose a different --new-target strategy."
-                    );
+                    ui.error("Sync failed: missing targets.");
                     process.exitCode = 1;
                     return;
                 }
 
-                // 6️⃣ PASS 2: write outputs
                 if (!opts.dryRun) {
                     for (const p of plans) {
                         await writeFile(p.lf.filePath, p.mainOutputXml, "utf-8");
-
-                        if (opts.obsolete === "graveyard" && p.graveyardOutputXml && p.graveyardPath) {
+                        if (p.graveyardOutputXml && p.graveyardPath) {
                             await writeFile(p.graveyardPath, p.graveyardOutputXml, "utf-8");
                         }
                     }
@@ -183,11 +152,7 @@ export function registerSyncCommand(program: Command) {
                 if (opts.dryRun) {
                     ui.success("Diff OK (dry-run)");
                 } else {
-                    ui.success(
-                        opts.obsolete === "graveyard"
-                            ? "Sync OK (files updated + graveyard written)"
-                            : "Sync OK (files updated)"
-                    );
+                    ui.success(opts.obsolete === "graveyard" ? "Sync OK (graveyard)" : "Sync OK");
                 }
             } catch (e: any) {
                 spinner.fail("Failed");
