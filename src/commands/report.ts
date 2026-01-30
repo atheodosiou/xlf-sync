@@ -6,12 +6,7 @@ import { readFile } from "node:fs/promises";
 import { parseXlf } from "../core/xlf/index.js";
 import { renderReportTable, ReportRow } from "../ui/table.js";
 import { renderBanner } from "../ui/banner.js";
-
-export function isUntranslated(target: string | undefined): boolean {
-    if (!target) return true;
-    const t = target.trim();
-    return t === "" || t.toUpperCase() === "TODO";
-}
+import { isUntranslated } from "../core/sync.js";
 
 export function countWords(text: string | undefined): number {
     if (!text) return 0;
@@ -46,6 +41,26 @@ export function calculateStats(entries: Iterable<any>): LocaleStats {
     return { total, done, todo, coverage, words };
 }
 
+export async function performReport(
+    res: { localeFiles: { locale: string; filePath: string }[] }
+): Promise<ReportRow[]> {
+    const rows: ReportRow[] = [];
+
+    for (const lf of res.localeFiles) {
+        const xml = await readFile(lf.filePath, "utf-8");
+        const parsed = parseXlf(xml);
+        const stats = calculateStats(parsed.entries.values());
+
+        rows.push({
+            locale: lf.locale,
+            version: parsed.version,
+            ...stats,
+        });
+    }
+
+    return rows;
+}
+
 export function registerReportCommand(program: Command) {
     program
         .command("report")
@@ -58,30 +73,15 @@ export function registerReportCommand(program: Command) {
             const spinner = ora("Scanning files...").start();
 
             try {
-                // 1) Discover files
                 const res = await discoverFiles({
                     sourcePath: opts.source,
                     localesGlob: opts.locales,
                 });
 
-                const rows: ReportRow[] = [];
-
-                // 2) Parse each locale file
-                for (const lf of res.localeFiles) {
-                    const xml = await readFile(lf.filePath, "utf-8");
-                    const parsed = parseXlf(xml);
-                    const stats = calculateStats(parsed.entries.values());
-
-                    rows.push({
-                        locale: lf.locale,
-                        version: parsed.version,
-                        ...stats,
-                    });
-                }
+                const rows = await performReport(res);
 
                 spinner.stop();
 
-                // 3) Render table
                 if (rows.length === 0) {
                     ui.warn("No locale files found.");
                 } else {

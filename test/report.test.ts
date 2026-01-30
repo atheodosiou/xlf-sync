@@ -1,5 +1,10 @@
-import { describe, it, expect } from "vitest";
-import { isUntranslated, countWords, calculateStats } from "../src/commands/report.js";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { countWords, calculateStats, performReport } from "../src/commands/report.js";
+import { isUntranslated } from "../src/core/sync.js";
+import { writeFile, mkdir, rm } from "fs/promises";
+import { join } from "path";
+
+const TEST_DIR = join(process.cwd(), "test-temp-report");
 
 describe("Report Logic", () => {
     describe("isUntranslated", () => {
@@ -57,6 +62,42 @@ describe("Report Logic", () => {
             const stats = calculateStats([]);
             expect(stats.total).toBe(0);
             expect(stats.coverage).toBe(100);
+        });
+    });
+
+    describe("performReport integration", () => {
+        beforeEach(async () => {
+            await mkdir(TEST_DIR, { recursive: true });
+        });
+
+        afterEach(async () => {
+            await rm(TEST_DIR, { recursive: true, force: true });
+        });
+
+        it("should summarize multiple files", async () => {
+            const f1 = join(TEST_DIR, "messages.el.xlf");
+            const f2 = join(TEST_DIR, "messages.fr.xlf");
+
+            const xml1 = `<xliff version="1.2"><file><body>
+                <trans-unit id="1"><source>S</source><target>T</target></trans-unit>
+            </body></file></xliff>`;
+            const xml2 = `<xliff version="1.2"><file><body>
+                <trans-unit id="1"><source>S</source><target>TODO</target></trans-unit>
+            </body></file></xliff>`;
+
+            await writeFile(f1, xml1);
+            await writeFile(f2, xml2);
+
+            const rows = await performReport({
+                localeFiles: [
+                    { locale: "el", filePath: f1 },
+                    { locale: "fr", filePath: f2 },
+                ]
+            });
+
+            expect(rows).toHaveLength(2);
+            expect(rows.find(r => r.locale === "el")?.coverage).toBe(100);
+            expect(rows.find(r => r.locale === "fr")?.coverage).toBe(0);
         });
     });
 });

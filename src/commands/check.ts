@@ -8,15 +8,75 @@ import { syncLocale } from "../core/sync.js";
 import { renderSummaryTable } from "../ui/table.js";
 import { renderBanner } from "../ui/banner.js";
 
-export interface CheckFailureOptions {
+export interface CheckOptions {
+    source: string;
+    locales: string;
     failOnMissing: boolean;
     failOnObsolete: boolean;
     failOnAdded: boolean;
+    newTarget: "todo" | "empty" | "source";
+    verbose: boolean;
+}
+
+export interface CheckResult {
+    rows: any[];
+    hasMissing: boolean;
+    hasObsolete: boolean;
+    hasAdded: boolean;
+    missingKeysByLocale: Record<string, string[]>;
+}
+
+export async function performCheck(
+    res: { sourcePath: string; localeFiles: { locale: string; filePath: string }[] },
+    opts: Pick<CheckOptions, "newTarget">
+): Promise<CheckResult> {
+    const sourceXml = await readFile(res.sourcePath, "utf-8");
+    const sourceParsed = parseXlf(sourceXml);
+
+    const rows: any[] = [];
+    const missingKeysByLocale: Record<string, string[]> = {};
+
+    let hasMissing = false;
+    let hasObsolete = false;
+    let hasAdded = false;
+
+    for (const lf of res.localeFiles) {
+        const xml = await readFile(lf.filePath, "utf-8");
+        const parsed = parseXlf(xml);
+
+        const diff = syncLocale(sourceParsed.entries, parsed.entries, {
+            newTarget: opts.newTarget,
+            obsolete: "delete",
+        });
+
+        const missingTargets = diff.missingTargets.length;
+        const obsolete = diff.obsoleteKeys.length;
+        const added = diff.addedKeys.length;
+
+        if (missingTargets > 0) {
+            hasMissing = true;
+            missingKeysByLocale[lf.locale] = diff.missingTargets.slice();
+        }
+        if (obsolete > 0) hasObsolete = true;
+        if (added > 0) hasAdded = true;
+
+        rows.push({
+            locale: lf.locale,
+            version: parsed.version,
+            sourceKeys: sourceParsed.entries.size,
+            localeKeys: parsed.entries.size,
+            added,
+            obsolete,
+            missingTargets,
+        });
+    }
+
+    return { rows, hasMissing, hasObsolete, hasAdded, missingKeysByLocale };
 }
 
 export function getCheckFailureReasons(
     stats: { hasMissing: boolean; hasObsolete: boolean; hasAdded: boolean },
-    opts: CheckFailureOptions
+    opts: Pick<CheckOptions, "failOnMissing" | "failOnObsolete" | "failOnAdded">
 ): string[] {
     const reasons: string[] = [];
     if (opts.failOnMissing && stats.hasMissing) reasons.push("missing targets");
@@ -47,70 +107,27 @@ export function registerCheckCommand(program: Command) {
                     localesGlob: opts.locales,
                 });
 
-                const sourceXml = await readFile(res.sourcePath, "utf-8");
-                const sourceParsed = parseXlf(sourceXml);
-
-                const rows: any[] = [];
-                const missingKeysByLocale: Record<string, string[]> = {};
-
-                let hasMissing = false;
-                let hasObsolete = false;
-                let hasAdded = false;
-
-                for (const lf of res.localeFiles) {
-                    const xml = await readFile(lf.filePath, "utf-8");
-                    const parsed = parseXlf(xml);
-
-                    const diff = syncLocale(sourceParsed.entries, parsed.entries, {
-                        newTarget: opts.newTarget,
-                        // For check: we only want detection, not modifications
-                        obsolete: "delete",
-                    });
-
-                    const missingTargets = diff.missingTargets.length;
-                    const obsolete = diff.obsoleteKeys.length;
-                    const added = diff.addedKeys.length;
-
-                    if (missingTargets > 0) {
-                        hasMissing = true;
-                        missingKeysByLocale[lf.locale] = diff.missingTargets.slice();
-                    }
-                    if (obsolete > 0) hasObsolete = true;
-                    if (added > 0) hasAdded = true;
-
-                    rows.push({
-                        locale: lf.locale,
-                        version: parsed.version,
-                        sourceKeys: sourceParsed.entries.size,
-                        localeKeys: parsed.entries.size,
-                        added,
-                        obsolete,
-                        missingTargets,
-                    });
-                }
+                const result = await performCheck(res, opts as CheckOptions);
 
                 spinner.stop();
-                renderSummaryTable(rows);
+                renderSummaryTable(result.rows);
 
                 if (opts.verbose) {
-                    const locales = Object.keys(missingKeysByLocale);
+                    const locales = Object.keys(result.missingKeysByLocale);
                     if (locales.length === 0) {
                         ui.success("No missing targets.");
                     } else {
                         ui.info("Missing targets:");
                         for (const locale of locales) {
                             ui.info(`- ${locale}:`);
-                            for (const key of missingKeysByLocale[locale]) {
+                            for (const key of result.missingKeysByLocale[locale]) {
                                 ui.info(`  • ${key}`);
                             }
                         }
                     }
                 }
 
-                const reasons = getCheckFailureReasons(
-                    { hasMissing, hasObsolete, hasAdded },
-                    opts
-                );
+                const reasons = getCheckFailureReasons(result, opts as CheckOptions);
 
                 if (reasons.length > 0) {
                     ui.error(`Check failed: ${reasons.join(", ")}`);

@@ -3,6 +3,12 @@ import { MessageEntry } from "../types/model.js";
 export type NewTargetMode = "todo" | "empty" | "source";
 export type ObsoleteMode = "delete" | "mark" | "graveyard";
 
+export function isUntranslated(target: string | undefined): boolean {
+    if (!target) return true;
+    const t = target.trim();
+    return t === "" || t.toUpperCase() === "TODO";
+}
+
 export interface SyncOptions {
     newTarget: NewTargetMode;
     obsolete: ObsoleteMode;
@@ -41,7 +47,7 @@ export function syncLocale(
                 targetXml,
             });
             keptKeys.push(key);
-            if (!targetXml || targetXml.trim() === "") missingTargets.push(key);
+            if (isUntranslated(targetXml)) missingTargets.push(key);
         } else {
             // add new entry
             const targetXml = makeNewTarget(srcEntry.sourceXml, opts.newTarget);
@@ -51,7 +57,7 @@ export function syncLocale(
                 targetXml,
             });
             addedKeys.push(key);
-            if (!targetXml || targetXml.trim() === "") missingTargets.push(key);
+            if (isUntranslated(targetXml)) missingTargets.push(key);
         }
     }
 
