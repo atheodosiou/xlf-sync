@@ -1,5 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { countWords, calculateStats, performReport } from "../src/commands/report.js";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { Command } from "commander";
+import { countWords, calculateStats, performReport, registerReportCommand } from "../src/commands/report.js";
+import * as discover from "../src/core/discover.js";
+import * as banner from "../src/ui/banner.js";
+import * as config from "../src/core/config.js";
 import { isUntranslated } from "../src/core/sync.js";
 import { writeFile, mkdir, rm } from "fs/promises";
 import { join } from "path";
@@ -98,6 +102,40 @@ describe("Report Logic", () => {
             expect(rows).toHaveLength(2);
             expect(rows.find(r => r.locale === "el")?.coverage).toBe(100);
             expect(rows.find(r => r.locale === "fr")?.coverage).toBe(0);
+        });
+    });
+
+    describe("Report Command", () => {
+        let program: Command;
+
+        beforeEach(() => {
+            program = new Command();
+            registerReportCommand(program);
+            vi.mock("../src/core/discover.js");
+            vi.mock("../src/ui/banner.js");
+            vi.mock("../src/core/config.js");
+        });
+
+        it("should call registerReportCommand and execute action", async () => {
+            vi.mocked(config.loadConfig).mockResolvedValue({});
+            vi.mocked(discover.discoverFiles).mockResolvedValue({
+                localeFiles: [{ locale: "el", filePath: "dummy" }],
+                sourcePath: "source"
+            } as any);
+            // Mocking the behavior of performReport indirectly by mocking files
+            // but since we already tested the logic, we just want to see if it runs
+
+            await program.parseAsync(["node", "test", "report"]);
+            expect(discover.discoverFiles).toHaveBeenCalled();
+        });
+
+        it("should handle error in report command", async () => {
+            vi.mocked(config.loadConfig).mockResolvedValue({});
+            vi.mocked(discover.discoverFiles).mockRejectedValue(new Error("Fail"));
+
+            await program.parseAsync(["node", "test", "report"]);
+            expect(process.exitCode).toBe(1);
+            process.exitCode = undefined;
         });
     });
 });

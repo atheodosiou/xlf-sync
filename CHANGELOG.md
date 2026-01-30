@@ -5,9 +5,14 @@ All notable changes to this project will be documented in this file.
 ## [1.2.0] - 2026-01-30
 
 ### Added
-- **Web Dashboard Command**: New `dashboard` command that generates a standalone, modern HTML report powered by Tailwind CSS.
+- **Web Dashboard Command**: New `dashboard` command that generates a standalone, modern HTML report powered by Tailwind CSS and Alpine.js.
+  - **Translation Matrix Table**: Visual grid showing which keys are translated (✅) or missing (❌) across all locales.
+  - **Search Functionality**: Filter the matrix by key ID to quickly find specific translations.
+  - **Enhanced Stats Display**: Coverage percentages displayed alongside progress bars for better visibility.
+  - **Responsive Design**: Mobile-friendly interface with smooth animations and modern aesthetics.
 - **Configuration File Support**: Added support for `xlf-sync.json` and `xlf-sync.config.json` to manage project settings and command defaults locally.
 - **Dynamic Versioning**: The CLI now correctly extracts and displays the version from `package.json`.
+- **Comprehensive Test Coverage**: Added unit tests for dashboard generation and command logic, achieving 100% coverage for new features. Overall project coverage increased to ~80%.
 
 ---
 

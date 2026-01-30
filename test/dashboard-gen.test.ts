@@ -20,7 +20,7 @@ describe("Dashboard Generator", () => {
 
         expect(html).toContain("<!DOCTYPE html>");
         expect(html).toContain("XLF-Sync");
-        expect(html).toContain("v1.2.0");
+        expect(html).toContain("V1.2.0");
         expect(html).toContain("el");
         expect(html).toContain("de");
         expect(html).toContain("key1");
@@ -36,7 +36,7 @@ describe("Dashboard Generator", () => {
             locales: []
         };
         const html = generateDashboardHtml(data, "1.0.0");
-        expect(html).toContain("v1.0.0");
+        expect(html).toContain("V1.0.0");
         expect(html).toContain("Translation Dashboard");
     });
 });

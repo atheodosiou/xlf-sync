@@ -139,11 +139,21 @@ npx xlf-sync report --source src/locale/messages.xlf --locales "src/locale/messa
 
 ### 3. The `dashboard` Command
 
-Generates a modern, standalone **HTML dashboard** to visualize your translation progress with beautiful charts and tables.
+Generates a modern, standalone **HTML dashboard** to visualize your translation progress with beautiful charts, tables, and an interactive translation matrix.
 
 ```bash
 npx xlf-sync dashboard --out report.html
 ```
+
+**Features:**
+- 📊 **Visual Statistics Cards**: Overview of locales, total keys, translated count, and pending translations
+- 📈 **Coverage Progress Bars**: Per-locale translation progress with percentage indicators
+- 🔍 **Translation Matrix**: Interactive table showing which keys exist in each locale
+  - ✅ Green checkmark for translated keys
+  - ❌ Red X for missing translations
+  - Search bar to filter by key ID
+- 🎨 **Modern UI**: Built with Tailwind CSS and Alpine.js for a premium, responsive experience
+- 📱 **Mobile-Friendly**: Fully responsive design that works on all devices
 
 #### Dashboard Options
 
