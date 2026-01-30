@@ -8,6 +8,23 @@ import { syncLocale } from "../core/sync.js";
 import { renderSummaryTable } from "../ui/table.js";
 import { renderBanner } from "../ui/banner.js";
 
+export interface CheckFailureOptions {
+    failOnMissing: boolean;
+    failOnObsolete: boolean;
+    failOnAdded: boolean;
+}
+
+export function getCheckFailureReasons(
+    stats: { hasMissing: boolean; hasObsolete: boolean; hasAdded: boolean },
+    opts: CheckFailureOptions
+): string[] {
+    const reasons: string[] = [];
+    if (opts.failOnMissing && stats.hasMissing) reasons.push("missing targets");
+    if (opts.failOnObsolete && stats.hasObsolete) reasons.push("obsolete keys");
+    if (opts.failOnAdded && stats.hasAdded) reasons.push("new keys need adding");
+    return reasons;
+}
+
 export function registerCheckCommand(program: Command) {
     program
         .command("check")
@@ -90,10 +107,10 @@ export function registerCheckCommand(program: Command) {
                     }
                 }
 
-                const reasons: string[] = [];
-                if (opts.failOnMissing && hasMissing) reasons.push("missing targets");
-                if (opts.failOnObsolete && hasObsolete) reasons.push("obsolete keys");
-                if (opts.failOnAdded && hasAdded) reasons.push("new keys need adding");
+                const reasons = getCheckFailureReasons(
+                    { hasMissing, hasObsolete, hasAdded },
+                    opts
+                );
 
                 if (reasons.length > 0) {
                     ui.error(`Check failed: ${reasons.join(", ")}`);
