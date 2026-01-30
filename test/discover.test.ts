@@ -105,4 +105,23 @@ describe("File Discovery", () => {
 
         expect(result.localeFiles.map(f => f.locale)).toEqual(["ar", "fr", "zh"]);
     });
+
+    it("should throw error if duplicate locales are found", async () => {
+        const sourcePath = join(TEST_DIR, "messages.xlf");
+        const locale1 = join(TEST_DIR, "messages.de.xlf");
+        const subDir = join(TEST_DIR, "subdir");
+        const locale2 = join(subDir, "messages.de.xlf");
+
+        await writeFile(sourcePath, "<xliff/>");
+        await writeFile(locale1, "<xliff/>");
+        await mkdir(subDir);
+        await writeFile(locale2, "<xliff/>");
+
+        await expect(
+            discoverFiles({
+                sourcePath,
+                localesGlob: join(TEST_DIR, "**/messages.*.xlf").replace(/\\/g, "/"),
+            })
+        ).rejects.toThrow('Duplicate locale "de"');
+    });
 });

@@ -9,15 +9,34 @@ import { renderSummaryTable } from "../ui/table.js";
 import { buildGraveyardEntries } from "../core/graveyard.js";
 import { renderBanner } from "../ui/banner.js";
 
-function resolveGraveyardPath(pattern: string, locale: string) {
+export function resolveGraveyardPath(pattern: string, locale: string) {
     return pattern.replaceAll("{locale}", locale);
 }
 
-type Plan = {
+export interface SyncOptions {
+    source: string;
+    locales: string;
+    dryRun: boolean;
+    newTarget: "todo" | "empty" | "source";
+    obsolete: "delete" | "mark" | "graveyard";
+    failOnMissing: boolean;
+    graveyardFile: string;
+}
+
+export type SyncPlan = {
     lf: { locale: string; filePath: string };
     mainOutputXml: string;
     graveyardOutputXml?: string;
     graveyardPath?: string;
+    stats: {
+        locale: string;
+        version: string;
+        sourceKeys: number;
+        localeKeys: number;
+        added: number;
+        obsolete: number;
+        missingTargets: number;
+    };
 };
 
 export function registerSyncCommand(program: Command) {

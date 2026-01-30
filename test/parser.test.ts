@@ -150,5 +150,20 @@ describe("XLIFF Parser", () => {
             expect(result.entries.get("first")?.targetXml).toBe("Premier");
             expect(result.entries.get("second")?.targetXml).toBe("Deuxième");
         });
+
+        it("should handle mixed/weird content in v1.2 with fallback", () => {
+            const xml = `
+<xliff version="1.2">
+  <file source-language="en" datatype="plaintext">
+    <body>
+      <trans-unit id="weird">
+        <source><![CDATA[Some CDATA]]></source>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>`;
+            const parsed = parseXlf(xml);
+            expect(parsed.entries.get("weird")?.sourceXml).toBe("Some CDATA");
+        });
     });
 });

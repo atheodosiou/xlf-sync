@@ -5,7 +5,7 @@ import boxen from "boxen";
 export const ui = {
     info: (msg: string) => console.log(chalk.cyan(msg)),
     success: (msg: string) => console.log(`${logSymbols.success} ${chalk.green(msg)}`),
-    warn: (msg: string) => console.log(`${logSymbols.warning} ${chalk.yellow(msg)}`),
+    warn: (msg: string) => console.warn(`${logSymbols.warning} ${chalk.yellow(msg)}`),
     error: (msg: string) => console.error(`${logSymbols.error} ${chalk.red(msg)}`),
     headerBox: (title: string, subtitle?: string) =>
         console.log(
