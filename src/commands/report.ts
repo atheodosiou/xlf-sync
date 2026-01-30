@@ -7,6 +7,7 @@ import { parseXlf } from "../core/xlf/index.js";
 import { renderReportTable, ReportRow } from "../ui/table.js";
 import { renderBanner } from "../ui/banner.js";
 import { isUntranslated } from "../core/sync.js";
+import { loadConfig } from "../core/config.js";
 
 export function countWords(text: string | undefined): number {
     if (!text) return 0;
@@ -67,15 +68,22 @@ export function registerReportCommand(program: Command) {
         .description("Generate translation statistics report")
         .option("--source <path>", "Path to source messages.xlf", "src/locale/messages.xlf")
         .option("--locales <glob>", "Glob for locale files", "src/locale/messages.*.xlf")
-        .action(async (opts) => {
+        .action(async (opts, cmd) => {
             renderBanner("report");
+
+            const config = await loadConfig();
+
+            const finalOpts = {
+                source: cmd.getOptionValueSource("source") === "cli" ? opts.source : (config.source ?? opts.source),
+                locales: cmd.getOptionValueSource("locales") === "cli" ? opts.locales : (config.locales ?? opts.locales),
+            };
 
             const spinner = ora("Scanning files...").start();
 
             try {
                 const res = await discoverFiles({
-                    sourcePath: opts.source,
-                    localesGlob: opts.locales,
+                    sourcePath: finalOpts.source,
+                    localesGlob: finalOpts.locales,
                 });
 
                 const rows = await performReport(res);

@@ -4,3 +4,4 @@ dist
 *.log
 .npmrc
 coverage
+xlf-sync.json

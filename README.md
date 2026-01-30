@@ -36,6 +36,50 @@ npx xlf-sync --help
 
 ---
 
+## 📂 Configuration
+
+You can avoid passing command-line arguments every time by creating an `xlf-sync.json` (or `xlf-sync.config.json`) file in your project root.
+
+### Example `xlf-sync.json`
+
+```json
+{
+  "source": "src/locale/messages.xlf",
+  "locales": "src/locale/messages.*.xlf",
+  "sync": {
+    "newTarget": "todo",
+    "obsolete": "mark",
+    "dryRun": false
+  },
+  "check": {
+    "failOnMissing": true,
+    "verbose": true
+  }
+}
+```
+
+### All Configuration Options
+
+| Option | JSON Key | Type | Description |
+| :--- | :--- | :--- | :--- |
+| **Global** | `source` | `string` | Path to source messages.xlf |
+| | `locales` | `string` | Glob for locale files |
+| **Sync** | `sync.newTarget` | `string` | `todo` \| `empty` \| `source` |
+| | `sync.obsolete` | `string` | `delete` \| `mark` \| `graveyard` |
+| | `sync.graveyardFile` | `string` | Path pattern for graveyard files |
+| | `sync.failOnMissing`| `boolean`| Exit non-zero on missing targets |
+| | `sync.dryRun` | `boolean`| Do not write files |
+| **Check** | `check.failOnMissing`| `boolean`| Exit non-zero on missing targets |
+| | `check.failOnObsolete`| `boolean`| Exit non-zero on obsolete keys |
+| | `check.failOnAdded` | `boolean`| Exit non-zero on un-synced keys |
+| | `check.newTarget` | `string` | `todo` \| `empty` \| `source` (for diff only) |
+| | `check.verbose` | `boolean`| Print missing keys list |
+
+> [!TIP]
+> **Precedence**: Command Line Flags **>** `xlf-sync.json` **>** Default Values.
+
+---
+
 ## 🚀 Usage
 
 ### 1. The `sync` Command
@@ -169,4 +213,4 @@ Please read our [Contributing Guidelines](CONTRIBUTING.md) to get started.
 
 ## 📄 License
 
-MIT © Anastasios Theodosiou
+MIT © [Anastasios Theodosiou](https://anastasios.theodosiou.me)

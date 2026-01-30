@@ -7,6 +7,7 @@ import { parseXlf } from "../core/xlf/index.js";
 import { syncLocale } from "../core/sync.js";
 import { renderSummaryTable } from "../ui/table.js";
 import { renderBanner } from "../ui/banner.js";
+import { loadConfig } from "../core/config.js";
 
 export interface CheckOptions {
     source: string;
@@ -96,23 +97,36 @@ export function registerCheckCommand(program: Command) {
         .option("--fail-on-added", "Exit non-zero if new keys would be added", false)
         .option("--new-target <mode>", "todo | empty | source (used for diff only)", "todo")
         .option("--verbose", "Print missing keys per locale", false)
-        .action(async (opts) => {
+        .action(async (opts, cmd) => {
             renderBanner("check");
+
+            const config = await loadConfig();
+            const checkConfig = config.check || {};
+
+            const finalOpts: CheckOptions = {
+                source: cmd.getOptionValueSource("source") === "cli" ? opts.source : (config.source ?? opts.source),
+                locales: cmd.getOptionValueSource("locales") === "cli" ? opts.locales : (config.locales ?? opts.locales),
+                failOnMissing: cmd.getOptionValueSource("failOnMissing") === "cli" ? opts.failOnMissing : (checkConfig.failOnMissing ?? opts.failOnMissing),
+                failOnObsolete: cmd.getOptionValueSource("failOnObsolete") === "cli" ? opts.failOnObsolete : (checkConfig.failOnObsolete ?? opts.failOnObsolete),
+                failOnAdded: cmd.getOptionValueSource("failOnAdded") === "cli" ? opts.failOnAdded : (checkConfig.failOnAdded ?? opts.failOnAdded),
+                newTarget: cmd.getOptionValueSource("newTarget") === "cli" ? opts.newTarget : (checkConfig.newTarget ?? opts.newTarget),
+                verbose: cmd.getOptionValueSource("verbose") === "cli" ? opts.verbose : (checkConfig.verbose ?? opts.verbose),
+            };
 
             const spinner = ora("Checking...").start();
 
             try {
                 const res = await discoverFiles({
-                    sourcePath: opts.source,
-                    localesGlob: opts.locales,
+                    sourcePath: finalOpts.source,
+                    localesGlob: finalOpts.locales,
                 });
 
-                const result = await performCheck(res, opts as CheckOptions);
+                const result = await performCheck(res, finalOpts);
 
                 spinner.stop();
                 renderSummaryTable(result.rows);
 
-                if (opts.verbose) {
+                if (finalOpts.verbose) {
                     const locales = Object.keys(result.missingKeysByLocale);
                     if (locales.length === 0) {
                         ui.success("No missing targets.");
@@ -127,7 +141,7 @@ export function registerCheckCommand(program: Command) {
                     }
                 }
 
-                const reasons = getCheckFailureReasons(result, opts as CheckOptions);
+                const reasons = getCheckFailureReasons(result, finalOpts);
 
                 if (reasons.length > 0) {
                     ui.error(`Check failed: ${reasons.join(", ")}`);

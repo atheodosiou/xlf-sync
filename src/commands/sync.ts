@@ -8,6 +8,7 @@ import { syncLocale } from "../core/sync.js";
 import { renderSummaryTable } from "../ui/table.js";
 import { buildGraveyardEntries } from "../core/graveyard.js";
 import { renderBanner } from "../ui/banner.js";
+import { loadConfig } from "../core/config.js";
 
 export function resolveGraveyardPath(pattern: string, locale: string) {
     return pattern.replaceAll("{locale}", locale);
@@ -113,20 +114,34 @@ export function registerSyncCommand(program: Command) {
             "Graveyard output path pattern",
             "src/locale/_obsolete.{locale}.xlf"
         )
-        .action(async (opts) => {
+        .action(async (opts, cmd) => {
             renderBanner("sync");
+
+            const config = await loadConfig();
+            const syncConfig = config.sync || {};
+
+            // Merge logic: CLI > Config > Defaults
+            const finalOpts: SyncOptions = {
+                source: cmd.getOptionValueSource("source") === "cli" ? opts.source : (config.source ?? opts.source),
+                locales: cmd.getOptionValueSource("locales") === "cli" ? opts.locales : (config.locales ?? opts.locales),
+                dryRun: cmd.getOptionValueSource("dryRun") === "cli" ? opts.dryRun : (syncConfig.dryRun ?? opts.dryRun),
+                newTarget: cmd.getOptionValueSource("newTarget") === "cli" ? opts.newTarget : (syncConfig.newTarget ?? opts.newTarget),
+                obsolete: cmd.getOptionValueSource("obsolete") === "cli" ? opts.obsolete : (syncConfig.obsolete ?? opts.obsolete),
+                failOnMissing: cmd.getOptionValueSource("failOnMissing") === "cli" ? opts.failOnMissing : (syncConfig.failOnMissing ?? opts.failOnMissing),
+                graveyardFile: cmd.getOptionValueSource("graveyardFile") === "cli" ? opts.graveyardFile : (syncConfig.graveyardFile ?? opts.graveyardFile),
+            };
 
             const spinner = ora("Scanning files...").start();
 
             try {
                 const res = await discoverFiles({
-                    sourcePath: opts.source,
-                    localesGlob: opts.locales,
+                    sourcePath: finalOpts.source,
+                    localesGlob: finalOpts.locales,
                 });
 
                 spinner.succeed(`Found ${res.localeFiles.length} locale file(s)`);
 
-                const plans = await preparePlans(res, opts as SyncOptions);
+                const plans = await preparePlans(res, finalOpts);
 
                 const rows = plans.map(p => p.stats);
                 const hasMissing = plans.some(p => p.stats.missingTargets > 0);
@@ -134,13 +149,13 @@ export function registerSyncCommand(program: Command) {
                 spinner.stop();
                 renderSummaryTable(rows);
 
-                if (opts.failOnMissing && hasMissing) {
+                if (finalOpts.failOnMissing && hasMissing) {
                     ui.error("Sync failed: missing targets.");
                     process.exitCode = 1;
                     return;
                 }
 
-                if (!opts.dryRun) {
+                if (!finalOpts.dryRun) {
                     for (const p of plans) {
                         await writeFile(p.lf.filePath, p.mainOutputXml, "utf-8");
                         if (p.graveyardOutputXml && p.graveyardPath) {
@@ -149,10 +164,10 @@ export function registerSyncCommand(program: Command) {
                     }
                 }
 
-                if (opts.dryRun) {
+                if (finalOpts.dryRun) {
                     ui.success("Diff OK (dry-run)");
                 } else {
-                    ui.success(opts.obsolete === "graveyard" ? "Sync OK (graveyard)" : "Sync OK");
+                    ui.success(finalOpts.obsolete === "graveyard" ? "Sync OK (graveyard)" : "Sync OK");
                 }
             } catch (e: any) {
                 spinner.fail("Failed");

@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2026-01-30
+
+### Added
+- **Configuration File Support**: Added support for `xlf-sync.json` and `xlf-sync.config.json` to manage project settings and command defaults locally.
+- **Dynamic Versioning**: The CLI now correctly extracts and displays the version from `package.json`.
+
+---
+
 ## [1.1.0] - 2026-01-30
 
 ### Added
