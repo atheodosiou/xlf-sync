@@ -38,27 +38,48 @@ export function syncLocale(
     for (const [key, srcEntry] of source.entries()) {
         const locEntry = locale.get(key);
 
+        let targetXml: string | undefined;
+        let mergedAttributes: Record<string, string> | undefined;
+        let mergedNotes = srcEntry.notes ?? [];
+
         if (locEntry) {
-            // keep existing translation if present
-            const targetXml = locEntry.targetXml;
-            merged.set(key, {
-                key,
-                sourceXml: srcEntry.sourceXml,
-                targetXml,
-            });
+            // keep existing translation
+            targetXml = locEntry.targetXml;
             keptKeys.push(key);
             if (isUntranslated(targetXml)) missingTargets.push(key);
+
+            // Merge attributes (locale overrides source)
+            if (srcEntry.attributes || locEntry.attributes) {
+                mergedAttributes = { ...srcEntry.attributes, ...locEntry.attributes };
+            }
+
+            // Merge notes (deduplicate by content)
+            if (locEntry.notes) {
+                const existing = new Set(mergedNotes.map(n => n.content));
+                for (const n of locEntry.notes) {
+                    if (!existing.has(n.content)) {
+                        mergedNotes.push(n);
+                        existing.add(n.content);
+                    }
+                }
+            }
         } else {
             // add new entry
-            const targetXml = makeNewTarget(srcEntry.sourceXml, opts.newTarget);
-            merged.set(key, {
-                key,
-                sourceXml: srcEntry.sourceXml,
-                targetXml,
-            });
+            targetXml = makeNewTarget(srcEntry.sourceXml, opts.newTarget);
             addedKeys.push(key);
             if (isUntranslated(targetXml)) missingTargets.push(key);
+
+            mergedAttributes = srcEntry.attributes;
         }
+
+        merged.set(key, {
+            key,
+            sourceXml: srcEntry.sourceXml,
+            targetXml,
+            attributes: mergedAttributes,
+            notes: mergedNotes.length > 0 ? mergedNotes : undefined,
+            contexts: srcEntry.contexts, // Context always follows source
+        });
     }
 
     // 2) Find obsolete keys (present in locale, not in source)

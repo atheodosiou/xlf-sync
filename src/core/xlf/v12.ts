@@ -23,10 +23,36 @@ export function parseV12(doc: any): ParsedXlf {
         const source = tu.source ?? "";
         const target = tu.target;
 
+        // Custom attributes (preserve anything starting with @_)
+        const attributes: Record<string, string> = {};
+        for (const [k, v] of Object.entries(tu)) {
+            if (k.startsWith("@_") && k !== "@_id") {
+                attributes[k] = String(v);
+            }
+        }
+
+        // Notes
+        const notes = asArray(tu.note).map((n: any) => ({
+            content: toXmlText(n),
+            from: n?.["@_from"],
+            priority: n?.["@_priority"],
+        }));
+
+        // Context Groups
+        const contexts = asArray(tu["context-group"]).flatMap((cg: any) =>
+            asArray(cg.context).map((c: any) => ({
+                type: c?.["@_context-type"] ?? "",
+                content: toXmlText(c),
+            }))
+        );
+
         entries.set(id, {
             key: id,
             sourceXml: toXmlText(source),
             targetXml: target !== undefined ? toXmlText(target) : undefined,
+            attributes: Object.keys(attributes).length > 0 ? attributes : undefined,
+            notes: notes.length > 0 ? notes : undefined,
+            contexts: contexts.length > 0 ? contexts : undefined,
         });
     }
 

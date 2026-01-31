@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2026-01-31
+
+### Added
+- **Metadata Preservation**: Full support for preserving XLIFF metadata during sync.
+  - **Notes & Comments**: Developer and translator notes (`<note>`) are now correctly preserved and merged.
+  - **Context Groups**: Source file location references (`<context-group>`) are maintained.
+  - **Custom Attributes**: Attributes like `approved="yes"`, `translate="no"`, and `priority` are no longer stripped.
+  - **Obsolete Key History**: Even keys marked as obsolete retain their full metadata history.
+
+---
+
 ## [1.2.0] - 2026-01-30
 
 ### Added

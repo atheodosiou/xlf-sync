@@ -1,9 +1,27 @@
 export type XlfVersion = "1.2" | "2.0";
 
+export interface NoteEntry {
+    content: string;
+    from?: string;
+    priority?: string;
+    category?: string;
+    id?: string;
+}
+
+export interface ContextEntry {
+    type: string; // e.g. sourcefile, linenumber
+    content: string;
+}
+
 export interface MessageEntry {
     key: string;              // trans-unit id or unit[:segment]
     sourceXml: string;        // inner XML content (not plain text)
     targetXml?: string;
+
+    // Metadata preservation
+    notes?: NoteEntry[];
+    contexts?: ContextEntry[];
+    attributes?: Record<string, string>; // e.g. approved="yes", translate="no"
 }
 
 export interface ParsedXlf {

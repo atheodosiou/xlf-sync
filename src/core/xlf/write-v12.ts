@@ -50,8 +50,34 @@ export function writeV12(
             source: normalizeText(entry.sourceXml),
         };
 
+        // Attributes
+        if (entry.attributes) {
+            Object.assign(tu, entry.attributes);
+        }
+
         if (entry.targetXml !== undefined) {
             tu.target = normalizeText(entry.targetXml);
+        }
+
+        // Context Groups (Angular default: purpose="location")
+        if (entry.contexts && entry.contexts.length > 0) {
+            tu["context-group"] = {
+                "@_purpose": "location",
+                context: entry.contexts.map(c => ({
+                    "#text": normalizeText(c.content),
+                    "@_context-type": c.type,
+                })),
+            };
+        }
+
+        // Notes
+        if (entry.notes && entry.notes.length > 0) {
+            tu.note = entry.notes.map(n => {
+                const noteObj: any = { "#text": normalizeText(n.content) };
+                if (n.from) noteObj["@_from"] = n.from;
+                if (n.priority) noteObj["@_priority"] = n.priority;
+                return noteObj;
+            });
         }
 
         transUnits.push(tu);
@@ -59,18 +85,21 @@ export function writeV12(
 
     // OBSOLETE MARK (safe, string-only, recovery-friendly)
     if (opts.obsolete === "mark") {
-        const originalUnits: any[] = body["trans-unit"] ?? [];
+        const originalUnits: any[] = Array.isArray(body["trans-unit"])
+            ? body["trans-unit"]
+            : (body["trans-unit"] ? [body["trans-unit"]] : []);
 
         for (const key of obsoleteKeys) {
             const original = originalUnits.find((u) => u["@_id"] === key);
             if (!original) continue;
 
-            transUnits.push({
-                "@_id": normalizeText(key),
-                source: normalizeText(original.source),
-                target: `__OBSOLETE__${normalizeText(original.target)}`,
-                note: "Marked obsolete by xlf-sync",
-            });
+            const marked = { ...original };
+            // Ensure target is a string for the special __OBSOLETE__ prefixing handled by toXmlV12
+            const oldTarget = typeof original.target === "object" ? original.target["#text"] : original.target;
+            marked.target = `__OBSOLETE__${normalizeText(oldTarget)}`;
+
+            // We rely on toXmlV12 to serialize the rest (notes, attributes) from the raw object
+            transUnits.push(marked);
         }
     }
 
@@ -116,6 +145,14 @@ function toXmlV12(doc: any): string {
             const id = escapeXml(normalizeText(tu["@_id"]));
             const source = escapeXml(normalizeText(tu.source));
 
+            // Attributes
+            let attrs = "";
+            for (const [k, v] of Object.entries(tu)) {
+                if (k.startsWith("@_") && k !== "@_id") {
+                    attrs += ` ${k.slice(2)}="${escapeXml(normalizeText(v))}"`;
+                }
+            }
+
             let targetXml = "";
             const targetRaw = tu.target;
 
@@ -128,15 +165,36 @@ function toXmlV12(doc: any): string {
                 }
             }
 
-            const noteXml = tu.note
-                ? `<note>${escapeXml(normalizeText(tu.note))}</note>`
-                : "";
+            // Context Groups
+            let contextXml = "";
+            if (tu["context-group"]) {
+                const cg = tu["context-group"];
+                const purpose = cg["@_purpose"] ? ` purpose="${escapeXml(cg["@_purpose"])}"` : "";
+                const contexts = Array.isArray(cg.context) ? cg.context : [cg.context];
+                const contextsStr = contexts.map((c: any) =>
+                    `        <context context-type="${escapeXml(c["@_context-type"])}">${escapeXml(normalizeText(c["#text"]))}</context>`
+                ).join("\n");
+                contextXml = `        <context-group${purpose}>\n${contextsStr}\n        </context-group>`;
+            }
+
+            // Notes
+            let noteXml = "";
+            if (tu.note) {
+                const notes = Array.isArray(tu.note) ? tu.note : [tu.note];
+                noteXml = notes.map((n: any) => {
+                    let nAttrs = "";
+                    if (n["@_from"]) nAttrs += ` from="${escapeXml(n["@_from"])}"`;
+                    if (n["@_priority"]) nAttrs += ` priority="${escapeXml(n["@_priority"])}"`;
+                    return `        <note${nAttrs}>${escapeXml(normalizeText(n["#text"] ?? n))}</note>`;
+                }).join("\n");
+            }
 
             return (
-                `      <trans-unit id="${id}">\n` +
+                `      <trans-unit id="${id}"${attrs}>\n` +
                 `        <source>${source}</source>\n` +
                 (targetXml ? `        ${targetXml}\n` : "") +
-                (noteXml ? `        ${noteXml}\n` : "") +
+                (contextXml ? `${contextXml}\n` : "") +
+                (noteXml ? `${noteXml}\n` : "") +
                 `      </trans-unit>`
             );
         })

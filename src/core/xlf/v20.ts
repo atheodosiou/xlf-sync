@@ -19,6 +19,23 @@ export function parseV20(doc: any): ParsedXlf {
         const unitId = unit?.["@_id"];
         if (!unitId) continue;
 
+        // Custom attributes
+        const attributes: Record<string, string> = {};
+        for (const [k, v] of Object.entries(unit)) {
+            if (k.startsWith("@_") && k !== "@_id") {
+                attributes[k] = String(v);
+            }
+        }
+
+        // Notes
+        const notesWrapper = unit.notes;
+        const notes = notesWrapper ? asArray(notesWrapper.note).map((n: any) => ({
+            content: toXmlText(n),
+            category: n?.["@_category"],
+            id: n?.["@_id"],
+            priority: n?.["@_priority"],
+        })) : [];
+
         const segments = asArray(unit.segment);
         // Angular exports usually have one segment, but support many
         segments.forEach((seg, idx) => {
@@ -27,10 +44,14 @@ export function parseV20(doc: any): ParsedXlf {
 
             const key = segments.length > 1 ? `${unitId}:${idx}` : unitId;
 
+            // Ideally we'd only attach notes to the first segment if we split,
+            // but for safety/sync we attach to all derived entries.
             entries.set(key, {
                 key,
                 sourceXml: toXmlText(source),
                 targetXml: target !== undefined ? toXmlText(target) : undefined,
+                attributes: Object.keys(attributes).length > 0 ? attributes : undefined,
+                notes: notes.length > 0 ? notes : undefined,
             });
         });
     }

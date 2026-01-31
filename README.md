@@ -11,6 +11,7 @@ It is built to integrate seamlessly into professional workflows, supporting both
 ## ✨ Key Features
 
 - **🔄 Full Synchronization**: Automatically adds missing keys from `messages.xlf` to all your locale files.
+- **🧠 Metadata Preservation**: Preserves all notes, context groups, and custom attributes (e.g., `approved="yes"`) during sync. Zero data loss.
 - **🛡️ Data Safety**: Never overwrites existing translations. Your work is safe.
 - **🧬 Multi-Version Support**: Seamlessly handles **XLIFF 1.2** and **2.0** in the same project. It auto-detects the version per file.
 - **🧹 Auto-Sorting**: Reorders translations in locale files to match the source file's order, ensuring clean and readable diffs.
@@ -229,7 +230,7 @@ Add this step to your Pull Request validation workflow to ensure no developer me
 
 We welcome contributions! Whether it's bug reports, feature requests, or code contributions, your help is appreciated.
 
-Please read our [Contributing Guidelines](CONTRIBUTING.md) to get started.
+Please read our [Contributing Guidelines](https://github.com/atheodosiou/xlf-sync/blob/master/CONTRIBUTING.md) to get started.
 
 **Quick ways to contribute:**
 - ⭐ [Star the project](https://github.com/atheodosiou/xlf-sync) on GitHub

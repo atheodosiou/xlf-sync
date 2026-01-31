@@ -28,6 +28,24 @@ export function writeV20(
             },
         };
 
+        // Attributes (on unit)
+        if (entry.attributes) {
+            Object.assign(unit, entry.attributes);
+        }
+
+        // Notes (on unit)
+        if (entry.notes && entry.notes.length > 0) {
+            unit.notes = {
+                note: entry.notes.map(n => {
+                    const noteObj: any = { "#text": n.content };
+                    if (n.category) noteObj["@_category"] = n.category;
+                    if (n.id) noteObj["@_id"] = n.id;
+                    if (n.priority) noteObj["@_priority"] = n.priority;
+                    return noteObj;
+                })
+            };
+        }
+
         if (entry.targetXml !== undefined) {
             unit.segment.target = entry.targetXml;
         }
@@ -37,21 +55,22 @@ export function writeV20(
 
     // OBSOLETE MARK (safe, string-only)
     if (opts.obsolete === "mark") {
-        const originalUnits: any[] = file.unit ?? [];
+        const originalUnits: any[] = Array.isArray(file.unit)
+            ? file.unit
+            : (file.unit ? [file.unit] : []);
 
         for (const key of obsoleteKeys) {
             const original = originalUnits.find((u) => u["@_id"] === key);
             if (!original) continue;
 
-            const seg = original.segment ?? {};
+            const marked = { ...original };
+            const seg = original.segment ? { ...original.segment } : {};
 
-            units.push({
-                "@_id": key,
-                segment: {
-                    source: seg.source ?? "",
-                    target: `__OBSOLETE__${seg.target ?? ""}`,
-                },
-            });
+            const oldTarget = typeof seg.target === "object" ? seg.target["#text"] : seg.target;
+            seg.target = `__OBSOLETE__${oldTarget ?? ""}`;
+            marked.segment = seg;
+
+            units.push(marked);
         }
     }
 
@@ -97,6 +116,29 @@ function toXmlV20(doc: any): string {
     const unitsXml = units
         .map((u) => {
             const id = escapeXml(String(u["@_id"]));
+
+            // Attributes (excluding ID which is handled)
+            let attrs = "";
+            for (const [k, v] of Object.entries(u)) {
+                if (k.startsWith("@_") && k !== "@_id") {
+                    attrs += ` ${k.slice(2)}="${escapeXml(String(v))}"`;
+                }
+            }
+
+            // Notes
+            let notesXml = "";
+            if (u.notes && u.notes.note) {
+                const notes = Array.isArray(u.notes.note) ? u.notes.note : [u.notes.note];
+                const noteLines = notes.map((n: any) => {
+                    let nAttrs = "";
+                    if (n["@_category"]) nAttrs += ` category="${escapeXml(String(n["@_category"]))}"`;
+                    if (n["@_id"]) nAttrs += ` id="${escapeXml(String(n["@_id"]))}"`;
+                    if (n["@_priority"]) nAttrs += ` priority="${escapeXml(String(n["@_priority"]))}"`;
+                    return `        <note${nAttrs}>${escapeXml(String(n["#text"] ?? n))}</note>`;
+                }).join("\n");
+                notesXml = `      <notes>\n${noteLines}\n      </notes>\n`;
+            }
+
             const seg = u.segment ?? {};
             const source = escapeXml(String(seg.source ?? ""));
 
@@ -111,7 +153,8 @@ function toXmlV20(doc: any): string {
             }
 
             return (
-                `    <unit id="${id}">\n` +
+                `    <unit id="${id}"${attrs}>\n` +
+                (notesXml ? `${notesXml}` : "") +
                 `      <segment>\n` +
                 `        <source>${source}</source>\n` +
                 (targetXml ? `        ${targetXml}\n` : "") +
