@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.1] - 2026-01-31
+
+### Documentation
+- **README Updates**: Added visual assets (screenshots) and landing page link.
+- **npm Page**: Updated metadata for better presentation on the registry.
+
+---
+
 ## [1.3.0] - 2026-01-31
 
 ### Added
