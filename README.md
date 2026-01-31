@@ -6,6 +6,10 @@
 
 It is built to integrate seamlessly into professional workflows, supporting both local development and strict CI/CD pipelines.
 
+[![xlf-sync](assets/landing_page.png)](https://atheodosiou.github.io/xlf-sync/)
+
+[**🌐 Visit the Official Landing Page & Documentation**](https://atheodosiou.github.io/xlf-sync/)
+
 ---
 
 ## ✨ Key Features
@@ -38,6 +42,8 @@ npx xlf-sync --help
 ---
 
 ## 📂 Configuration
+
+![xlf-sync CLI](assets/cli.png)
 
 You can avoid passing command-line arguments every time by creating an `xlf-sync.json` (or `xlf-sync.config.json`) file in your project root.
 
@@ -145,6 +151,8 @@ Generates a modern, standalone **HTML dashboard** to visualize your translation 
 ```bash
 npx xlf-sync dashboard --out report.html
 ```
+
+![xlf-sync Dashboard](assets/dashboard.png)
 
 **Features:**
 - 📊 **Visual Statistics Cards**: Overview of locales, total keys, translated count, and pending translations
