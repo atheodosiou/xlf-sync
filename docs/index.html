@@ -448,8 +448,35 @@
                     <p class="text-gray-300 mt-4 pl-4 border-l-2 border-blue-500">
                         While xlf-sync was designed with Angular in mind, it works with <strong>any XLIFF 1.2 or 2.0
                             files</strong>. If your framework uses standard XLIFF format, xlf-sync will work
-                        perfectly!
+                        perfectly.
                     </p>
+                </details>
+
+                <details class="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 group">
+                    <summary class="text-xl font-bold cursor-pointer list-none flex items-center justify-between">
+                        <span>Does it preserve developer notes and attributes?</span>
+                        <span class="text-2xl group-open:rotate-180 transition-transform">›</span>
+                    </summary>
+                    <p class="text-gray-300 mt-4 pl-4 border-l-2 border-blue-500">
+                        <strong>Yes!</strong> All metadata, including <code>&lt;note&gt;</code> elements,
+                        <code>&lt;context-group&gt;</code>,
+                        and custom attributes (like <code>approved="yes"</code> or <code>translate="no"</code>), are
+                        strictly preserved.
+                        We guarantee <strong>Zero Data Loss</strong> for your metadata.
+                    </p>
+                </details>
+
+                <details class="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 group">
+                    <summary class="text-xl font-bold cursor-pointer list-none flex items-center justify-between">
+                        <span>Does it sort the translations?</span>
+                        <span class="text-2xl group-open:rotate-180 transition-transform">›</span>
+                    </summary>
+                    <p class="text-gray-300 mt-4 pl-4 border-l-2 border-blue-500">
+                        <strong>Yes!</strong> xlf-sync automatically reorders the translation units in your locale files
+                        to match the
+                        exact order of your source file. This keeps your git diffs clean and your files organized.
+                    </p>
+                </details>
             </div>
             </div>
         </section>
