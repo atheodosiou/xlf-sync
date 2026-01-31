@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.2] - 2026-01-31
+
+### Fixed
+- **npm Documentation**: Fixed broken images on npm registry by using absolute GitHub URLs.
+
+---
+
 ## [1.3.1] - 2026-01-31
 
 ### Documentation
