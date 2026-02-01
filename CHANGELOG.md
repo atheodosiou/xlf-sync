@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.3] - 2026-02-02
+
+### Documentation
+- **README Updates**: Added link to "The Missing Piece in Angular i18n" article.
+- **Support**: Added "Buy Me A Coffee" button to README.
+
+---
+
 ## [1.3.2] - 2026-01-31
 
 ### Fixed

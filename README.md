@@ -1,5 +1,7 @@
 # xlf-sync
 
+<a href="https://www.buymeacoffee.com/atheodosiou" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
+
 > 📝 **Read the article:** [The Missing Piece in Angular i18n](https://dev.to/atheodosiou/the-missing-piece-in-angular-i18n-57m0)
 
 > **The definitive CLI tool for synchronizing Angular XLIFF (1.2 & 2.0) locale files.**
