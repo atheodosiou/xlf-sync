@@ -1,5 +1,7 @@
 # xlf-sync
 
+> 📝 **Read the article:** [The Missing Piece in Angular i18n](https://dev.to/atheodosiou/the-missing-piece-in-angular-i18n-57m0)
+
 > **The definitive CLI tool for synchronizing Angular XLIFF (1.2 & 2.0) locale files.**
 
 **`xlf-sync`** is a robust, production-ready utility designed to solve the persistent challenge of Angular i18n management: keeping your locale files (`messages.<locale>.xlf`) in perfect sync with your source file (`messages.xlf`), without data loss or corruption.
