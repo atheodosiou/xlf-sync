@@ -104,7 +104,7 @@ export function writeV12(
     }
 
     // apply rebuilt units
-    if (typeof body !== 'object' || body === null) {
+    if (typeof body !== "object" || body === null) {
         body = {};
         file.body = body;
     }

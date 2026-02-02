@@ -22,35 +22,40 @@ export interface LocaleStats {
     words: number;
 }
 
-export function calculateStats(entries: Iterable<any>): LocaleStats {
-    let total = 0;
+export function calculateStats(
+    sourceKeys: string[],
+    localeEntries: Map<string, any>
+): LocaleStats {
+    let done = 0;
     let todo = 0;
     let words = 0;
 
-    for (const entry of entries) {
-        total++;
-        if (isUntranslated(entry.targetXml)) {
+    for (const key of sourceKeys) {
+        const entry = localeEntries.get(key);
+        if (!entry || isUntranslated(entry.targetXml)) {
             todo++;
         } else {
+            done++;
             words += countWords(entry.targetXml);
         }
     }
 
-    const done = total - todo;
+    const total = sourceKeys.length;
     const coverage = total > 0 ? (done / total) * 100 : 100;
 
     return { total, done, todo, coverage, words };
 }
 
 export async function performReport(
-    res: { localeFiles: { locale: string; filePath: string }[] }
+    res: { localeFiles: { locale: string; filePath: string }[] },
+    sourceKeys: string[]
 ): Promise<ReportRow[]> {
     const rows: ReportRow[] = [];
 
     for (const lf of res.localeFiles) {
         const xml = await readFile(lf.filePath, "utf-8");
         const parsed = parseXlf(xml);
-        const stats = calculateStats(parsed.entries.values());
+        const stats = calculateStats(sourceKeys, parsed.entries);
 
         rows.push({
             locale: lf.locale,
@@ -86,7 +91,11 @@ export function registerReportCommand(program: Command) {
                     localesGlob: finalOpts.locales,
                 });
 
-                const rows = await performReport(res);
+                const sourceXml = await readFile(finalOpts.source, "utf-8");
+                const sourceParsed = parseXlf(sourceXml);
+                const sourceKeys = Array.from(sourceParsed.entries.keys());
+
+                const rows = await performReport(res, sourceKeys);
 
                 spinner.stop();
 

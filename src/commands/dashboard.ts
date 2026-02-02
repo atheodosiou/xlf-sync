@@ -41,7 +41,7 @@ export function registerDashboardCommand(program: Command) {
                     localesGlob: finalOpts.locales,
                 });
 
-                const reportRows = await performReport(res);
+                const reportRows = await performReport(res, sourceIds);
 
                 // Map fields for UI: total -> keys, todo -> pending
                 const stats = reportRows.map(r => ({

@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.5] - 2026-02-02
+
+### Changed
+- **Coverage Calculation**: Unified coverage logic across `report` and `dashboard`. Statistics now compare against the source `messages.xlf`, correctly counting missing keys in locale files as incomplete (Pending).
+
+### Fixed
+- **Serialization Bug**: Fixed an issue where numeric and boolean values in XML nodes were incorrectly serialized as `[object Object]`.
+- **Empty Body Crash**: Fixed a crash when syncing files with an empty or missing `<body>` tag.
+- **V12 Parser**: Improved robustness when parsing XLIFF files with minimal structure.
+
+### Tests
+- **Regression Suite**: Added comprehensive regression tests for numeric serialization, empty body edge cases, and coverage accuracy.
+
+---
+
 ## [1.3.4] - 2026-02-02
 
 ### Fixed
