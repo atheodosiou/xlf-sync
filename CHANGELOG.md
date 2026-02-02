@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.4] - 2026-02-02
+
+### Fixed
+- **Serialization Bug**: Fixed a critical issue where numeric values (e.g., line numbers in contexts) were serialized as `[object Object]`.
+
+---
+
 ## [1.3.3] - 2026-02-02
 
 ### Documentation

@@ -13,7 +13,7 @@ export function parseV12(doc: any): ParsedXlf {
     const locale = file?.["@_target-language"]; // optional
 
     const body = file?.body;
-    if (!body) throw new Error("Invalid XLF 1.2: missing <body>");
+    if (body === undefined) throw new Error("Invalid XLF 1.2: missing <body>");
 
     const transUnits = asArray(body["trans-unit"]);
     for (const tu of transUnits) {
@@ -68,8 +68,12 @@ export function parseV12(doc: any): ParsedXlf {
 function toXmlText(v: any): string {
     if (v === null || v === undefined) return "";
     if (typeof v === "string") return v;
+    if (typeof v === "number" || typeof v === "boolean") return String(v);
+
     if (typeof v === "object") {
-        if (typeof v["#text"] === "string") return v["#text"];
+        if (v["#text"] !== undefined && v["#text"] !== null) {
+            return String(v["#text"]);
+        }
     }
     // fast-xml-parser can produce objects for mixed content; fallback:
     return String(v);

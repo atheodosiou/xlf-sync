@@ -1,7 +1,5 @@
 # xlf-sync
 
-<a href="https://www.buymeacoffee.com/atheodosiou" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
-
 > 📝 **Read the article:** [The Missing Piece in Angular i18n](https://dev.to/atheodosiou/the-missing-piece-in-angular-i18n-57m0)
 
 > **The definitive CLI tool for synchronizing Angular XLIFF (1.2 & 2.0) locale files.**
@@ -249,6 +247,8 @@ Please read our [Contributing Guidelines](https://github.com/atheodosiou/xlf-syn
 - 🐛 [Report bugs](https://github.com/atheodosiou/xlf-sync/issues/new)
 - 💡 [Suggest features](https://github.com/atheodosiou/xlf-sync/issues/new)
 - 🔧 [Submit pull requests](https://github.com/atheodosiou/xlf-sync/pulls)
+
+<a href="https://www.buymeacoffee.com/atheodosiou" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
 
 ---
 

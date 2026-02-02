@@ -39,7 +39,7 @@ export function writeV12(
 ): string {
     const xliff = rawDoc.xliff;
     const file = xliff.file;
-    const body = file.body;
+    let body = file.body;
 
     // rebuild trans-units from merged (source-of-truth order)
     const transUnits: any[] = [];
@@ -104,6 +104,10 @@ export function writeV12(
     }
 
     // apply rebuilt units
+    if (typeof body !== 'object' || body === null) {
+        body = {};
+        file.body = body;
+    }
     body["trans-unit"] = transUnits;
 
     return toXmlV12(rawDoc);
