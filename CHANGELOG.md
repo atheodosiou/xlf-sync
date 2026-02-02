@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+
+## [1.3.6] - 2026-02-02
+
+### Added
+- **npm Metadata**: Added repository, bugs, and homepage fields to `package.json` for better registry integration.
+
+---
+
 ## [1.3.5] - 2026-02-02
 
 ### Changed

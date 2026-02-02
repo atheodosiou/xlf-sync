@@ -1,6 +1,6 @@
 {
   "name": "xlf-sync",
-  "version": "1.3.5",
+  "version": "1.3.6",
   "description": "Sync Angular XLIFF (1.2 & 2.0) locale files with messages.xlf",
   "type": "module",
   "bin": {
@@ -17,6 +17,14 @@
     "test:coverage": "vitest run --coverage",
     "lint": "echo 'No linter configured'"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/atheodosiou/xlf-sync.git"
+  },
+  "bugs": {
+    "url": "https://github.com/atheodosiou/xlf-sync/issues"
+  },
+  "homepage": "https://github.com/atheodosiou/xlf-sync#readme",
   "keywords": [
     "angular",
     "i18n",
