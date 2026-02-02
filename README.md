@@ -1,5 +1,8 @@
 # xlf-sync
 
+[![npm version](https://img.shields.io/npm/v/xlf-sync.svg?style=flat-square)](https://www.npmjs.com/package/xlf-sync)
+[![license](https://img.shields.io/github/license/atheodosiou/xlf-sync.svg?style=flat-square)](https://github.com/atheodosiou/xlf-sync/blob/master/LICENSE)
+
 > 📝 **Read the article:** [The Missing Piece in Angular i18n](https://dev.to/atheodosiou/the-missing-piece-in-angular-i18n-57m0)
 
 > **The definitive CLI tool for synchronizing Angular XLIFF (1.2 & 2.0) locale files.**
