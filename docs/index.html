@@ -22,7 +22,7 @@
     <meta property="og:title" content="xlf-sync - Angular XLIFF Translation Synchronization Tool">
     <meta property="og:description"
         content="The definitive CLI tool for synchronizing Angular XLIFF (1.2 & 2.0) locale files. Keep your translations in perfect sync with automated synchronization, visual dashboards, and CI/CD integration.">
-    <meta property="og:image" content="https://atheodosiou.github.io/xlf-sync/og-image.png">
+    <meta property="og:image" content="https://atheodosiou.github.io/xlf-sync/assets/landing_page.png">
     <meta property="og:site_name" content="xlf-sync">
     <meta property="og:locale" content="en_US">
 
@@ -32,7 +32,7 @@
     <meta name="twitter:title" content="xlf-sync - Angular XLIFF Translation Synchronization Tool">
     <meta name="twitter:description"
         content="The definitive CLI tool for synchronizing Angular XLIFF (1.2 & 2.0) locale files. Keep your translations in perfect sync.">
-    <meta name="twitter:image" content="https://atheodosiou.github.io/xlf-sync/og-image.png">
+    <meta name="twitter:image" content="https://atheodosiou.github.io/xlf-sync/assets/landing_page.png">
     <meta name="twitter:creator" content="@atheodosiou">
 
     <!-- Additional SEO -->
@@ -61,14 +61,56 @@
       },
       "url": "https://atheodosiou.github.io/xlf-sync/",
       "downloadUrl": "https://www.npmjs.com/package/xlf-sync",
-      "softwareVersion": "1.3.6",
+      "softwareVersion": "1.4.0",
       "releaseNotes": "https://github.com/atheodosiou/xlf-sync/blob/master/CHANGELOG.md",
-      "screenshot": "https://atheodosiou.github.io/xlf-sync/screenshot.png",
+      "screenshot": "https://atheodosiou.github.io/xlf-sync/assets/landing_page.png",
       "aggregateRating": {
         "@type": "AggregateRating",
         "ratingValue": "5",
         "ratingCount": "1"
       }
+    }
+    </script>
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [{
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://atheodosiou.github.io/xlf-sync/"
+      }]
+    }
+    </script>
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [{
+        "@type": "Question",
+        "name": "What XLIFF versions are supported?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "xlf-sync supports both XLIFF 1.2 and XLIFF 2.0 formats. You can even mix both versions in the same project - the tool automatically detects and handles each file appropriately."
+        }
+      }, {
+        "@type": "Question",
+        "name": "Can I use xlf-sync in CI/CD pipelines?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Absolutely! Use the check command with --fail-on-missing to validate translations. It exits with code 1 if there are missing translations, making it perfect for automated workflows like GitHub Actions."
+        }
+      }, {
+        "@type": "Question",
+        "name": "Does it preserve developer notes and attributes?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes! All metadata, including note elements, context-group, and custom attributes (like approved='yes' or translate='no'), are strictly preserved with Zero Data Loss guarantee."
+        }
+      }]
     }
     </script>
 
@@ -145,7 +187,7 @@
         <header class="text-center mb-16">
             <div class="inline-block mb-6">
                 <span class="glass px-4 py-2 rounded-full text-sm font-semibold">
-                    v<span id="version">1.3.6</span>
+                    v<span id="version">1.4.0</span>
                 </span>
             </div>
             <h1
@@ -185,7 +227,6 @@
                         Copy
                     </button>
                 </div>
-            </div>
             </div>
         </header>
 
@@ -253,7 +294,70 @@
                     <h3 class="text-xl font-bold mb-2">80% Test Coverage</h3>
                     <p class="text-gray-300">Comprehensive test suite ensuring reliability and stability</p>
                 </div>
+                <div class="feature-card bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
+                    <div class="text-4xl mb-4">🚀</div>
+                    <h3 class="text-xl font-bold mb-2">GitHub Actions CI</h3>
+                    <p class="text-gray-300">Automated workflow to verify translations and build on every push</p>
+                </div>
+
+                <div class="feature-card bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
+                    <div class="text-4xl mb-4">✨</div>
+                    <h3 class="text-xl font-bold mb-2">Pretty Printing</h3>
+                    <p class="text-gray-300">Normalizes XML formatting across all files, eliminating dirty git diffs</p>
+                </div>
             </div>
+        </section>
+
+        <!-- Comparison Table -->
+        <section class="mb-20" aria-labelledby="comparison-heading">
+            <h2 id="comparison-heading" class="text-4xl font-bold mb-8 text-center">Comparison</h2>
+            <div class="overflow-x-auto bg-white/5 backdrop-blur-lg rounded-xl border border-white/20">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="border-b border-white/10 bg-white/5">
+                            <th class="p-4">Feature</th>
+                            <th class="p-4 text-blue-400">xlf-sync</th>
+                            <th class="p-4 text-gray-400">xliffmerge</th>
+                            <th class="p-4 text-gray-400">ng-extract-i18n-merge</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-300">
+                        <tr class="border-b border-white/10">
+                            <td class="p-4 font-semibold">XLIFF 1.2 & 2.0</td>
+                            <td class="p-4 text-green-400">✅ Full</td>
+                            <td class="p-4">✅ Full</td>
+                            <td class="p-4">⚠️ Partial</td>
+                        </tr>
+                        <tr class="border-b border-white/10">
+                            <td class="p-4 font-semibold">Metadata Preservation</td>
+                            <td class="p-4 text-green-400">✅ Absolute</td>
+                            <td class="p-4 text-orange-400">⚠️ Limited</td>
+                            <td class="p-4 text-orange-400">⚠️ Limited</td>
+                        </tr>
+                        <tr class="border-b border-white/10">
+                            <td class="p-4 font-semibold">Visual Dashboard</td>
+                            <td class="p-4 text-green-400">✅ Yes</td>
+                            <td class="p-4 text-red-500">❌ No</td>
+                            <td class="p-4 text-red-500">❌ No</td>
+                        </tr>
+                        <tr class="border-b border-white/10">
+                            <td class="p-4 font-semibold">CI/CD Ready</td>
+                            <td class="p-4 text-green-400">✅ Yes</td>
+                            <td class="p-4">✅ Yes</td>
+                            <td class="p-4">✅ Yes</td>
+                        </tr>
+                        <tr>
+                            <td class="p-4 font-semibold">Maintenance</td>
+                            <td class="p-4 text-green-400">✅ Active</td>
+                            <td class="p-4 text-red-500">❌ Legacy</td>
+                            <td class="p-4">✅ Active</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-center text-gray-400 mt-6 italic">
+                A modern, reliable replacement for legacy i18n tools.
+            </p>
         </section>
 
         <!-- Quick Start Section -->
@@ -333,7 +437,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
             </div>
         </section>
 
@@ -478,7 +581,6 @@
                     </p>
                 </details>
             </div>
-            </div>
         </section>
 
         <!-- Contribution Section -->
@@ -507,7 +609,6 @@
                     </a>
                 </div>
             </div>
-            </div>
         </section>
 
         <!-- Footer -->
@@ -521,7 +622,6 @@
                     class="hover:text-white transition-colors">npm</a>
                 <a href="https://github.com/atheodosiou/xlf-sync/blob/master/LICENSE" target="_blank"
                     class="hover:text-white transition-colors">MIT License</a>
-            </div>
             </div>
         </footer>
     </main>
@@ -549,20 +649,20 @@
         }
 
         // Copy to clipboard function
-        function copyToClipboard(text) {
+        window.copyToClipboard = (text) => {
             navigator.clipboard.writeText(text).then(() => {
                 // Show feedback
                 const btn = event.target;
-                const originalText = btn.textContent;
-                btn.textContent = 'Copied!';
+                const originalContent = btn.innerHTML;
+                btn.innerHTML = '✓ Copied!';
                 btn.classList.add('bg-green-600');
+                btn.classList.remove('bg-slate-700');
 
                 setTimeout(() => {
-                    btn.textContent = originalText;
+                    btn.innerHTML = originalContent;
                     btn.classList.remove('bg-green-600');
+                    btn.classList.add('bg-slate-700');
                 }, 2000);
-            }).catch(err => {
-                console.error('Failed to copy:', err);
             });
         }
 

@@ -1,8 +1,8 @@
-export function generateDashboardHtml(data: any, version: string): string {
-    const jsonData = JSON.stringify(data);
-    const date = new Date().toLocaleString();
+export function generateDashboardHtml(data: unknown, version: string): string {
+	const jsonData = JSON.stringify(data);
+	const date = new Date().toLocaleString();
 
-    return `<!DOCTYPE html>
+	return `<!DOCTYPE html>
 <html lang="en" class="h-full bg-gray-50">
 <head>
     <meta charset="UTF-8">
@@ -16,7 +16,7 @@ export function generateDashboardHtml(data: any, version: string): string {
     <style>
         body { font-family: 'Inter', sans-serif; }
         .mono { font-family: 'JetBrains Mono', monospace; }
-        [x-cloak] { display: none !important; }
+        [x-cloak] { display: none; }
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -39,7 +39,7 @@ export function generateDashboardHtml(data: any, version: string): string {
         }
     </script>
 </head>
-<body class="h-full" x-data="dashboard">
+<body class="h-full" x-data='dashboard'>
     <div class="min-h-full">
         <nav class="bg-white border-b border-gray-200">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

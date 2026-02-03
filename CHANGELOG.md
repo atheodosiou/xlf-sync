@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 
 
+## [1.4.0] - 2026-02-04
+
+### Added
+- **Code Coverage**: Integrated code coverage reporting (Vitest) into the CI workflow.
+- **Visual CLI Hint**: Added an ASCII/visual preview of the CLI output to the README.
+
+### Changed
+- **Performance & Reliability**: Major refactoring of XLIFF serialization (v1.2 and v2.0) for better type safety and robustness.
+- **Zero-Any Architecture**: Fully eliminated `any` types from the codebase and test suite for 100% strict type safety.
+
+### Fixed
+- **Metadata Preservation**: Fixed a regression where XLIFF 1.2 context groups were lost during synchronization.
+- **Test Restoration**: Fixed several environment-related test failures (ReferenceError, missing imports) on Windows.
+
+
 ## [1.3.7] - 2026-02-03
 
 ### Added

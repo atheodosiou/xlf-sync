@@ -1,217 +1,186 @@
-import { MessageEntry } from "../../types/model.js";
+import { escapeXml } from "./write-v20.js";
+import type { MessageEntry, WriteOptions } from "../../types/model.js";
 
-export type NewTargetMode = "todo" | "empty" | "source";
-export type ObsoleteMode = "delete" | "mark" | "graveyard";
-
-export interface WriteOptions {
-    newTarget: NewTargetMode;
-    obsolete: ObsoleteMode;
+function normalizeText(v: unknown): string {
+	if (v == null) return "";
+	if (typeof v === "string") return v;
+	if (typeof v === "object") {
+		const obj = v as Record<string, unknown>;
+		if (typeof obj["#text"] === "string") return obj["#text"];
+		if (typeof obj.text === "string") return obj.text;
+		if (Array.isArray(v)) return v.map(normalizeText).join("");
+	}
+	return "";
 }
 
-/**
- * Defensive normalization:
- * - Ensures we never stringify objects into "[object Object]"
- * - Helps recover from previously "dirty" files.
- */
-function normalizeText(v: any): string {
-    if (v == null) return "";
-    if (typeof v === "string") return v;
-
-    // If some upstream step accidentally produced a fast-xml-parser style object
-    if (typeof v === "object") {
-        if (typeof v["#text"] === "string") return v["#text"];
-        if (typeof v.text === "string") return v.text;
-
-        // Sometimes arrays happen in edge cases
-        if (Array.isArray(v)) {
-            return v.map(normalizeText).join("");
-        }
-    }
-
-    return "";
+// Helper to ensure an item is an array
+function asArray<T>(v: T | T[] | undefined | null): T[] {
+	if (v === undefined || v === null) return [];
+	return Array.isArray(v) ? v : [v];
 }
 
 export function writeV12(
-    rawDoc: any,
-    merged: Map<string, MessageEntry>,
-    obsoleteKeys: string[],
-    opts: WriteOptions
+	rawDoc: unknown,
+	merged: Map<string, MessageEntry>,
+	obsoleteKeys: string[],
+	opts: WriteOptions,
 ): string {
-    const xliff = rawDoc.xliff;
-    const file = xliff.file;
-    let body = file.body;
+	const doc = rawDoc as Record<string, unknown>;
+	const xliff = doc.xliff as Record<string, unknown>;
+	const file = xliff.file as Record<string, unknown>;
+	let body = file.body as Record<string, unknown> | undefined;
 
-    // rebuild trans-units from merged (source-of-truth order)
-    const transUnits: any[] = [];
+	if (!body) {
+		body = {};
+		file.body = body;
+	}
 
-    for (const entry of merged.values()) {
-        const tu: any = {
-            "@_id": normalizeText(entry.key),
-            source: normalizeText(entry.sourceXml),
-        };
+	// rebuild trans-units from merged (source-of-truth order)
+	const transUnits: Record<string, unknown>[] = [];
 
-        // Attributes
-        if (entry.attributes) {
-            Object.assign(tu, entry.attributes);
-        }
+	for (const entry of merged.values()) {
+		const tu: Record<string, unknown> = {
+			"@_id": normalizeText(entry.key),
+			source: normalizeText(entry.sourceXml),
+		};
 
-        if (entry.targetXml !== undefined) {
-            tu.target = normalizeText(entry.targetXml);
-        }
+		// Attributes
+		if (entry.attributes) {
+			for (const [k, v] of Object.entries(entry.attributes)) {
+				tu[k] = v;
+			}
+		}
 
-        // Context Groups (Angular default: purpose="location")
-        if (entry.contexts && entry.contexts.length > 0) {
-            tu["context-group"] = {
-                "@_purpose": "location",
-                context: entry.contexts.map(c => ({
-                    "#text": normalizeText(c.content),
-                    "@_context-type": c.type,
-                })),
-            };
-        }
+		// Target
+		if (entry.targetXml !== undefined) {
+			tu.target = entry.targetXml;
+		}
 
-        // Notes
-        if (entry.notes && entry.notes.length > 0) {
-            tu.note = entry.notes.map(n => {
-                const noteObj: any = { "#text": normalizeText(n.content) };
-                if (n.from) noteObj["@_from"] = n.from;
-                if (n.priority) noteObj["@_priority"] = n.priority;
-                return noteObj;
-            });
-        }
+		// Notes
+		if (entry.notes && entry.notes.length > 0) {
+			tu.note = entry.notes.map((n) => {
+				const noteObj: Record<string, unknown> = { "#text": n.content };
+				if (n.from) noteObj["@_from"] = n.from;
+				if (n.priority) noteObj["@_priority"] = n.priority;
+				return noteObj;
+			});
+		}
 
-        transUnits.push(tu);
-    }
+		// Contexts
+		if (entry.contexts && entry.contexts.length > 0) {
+			tu["context-group"] = [
+				{
+					"@_purpose": "location",
+					context: entry.contexts.map((c) => ({
+						"@_context-type": c.type,
+						"#text": c.content,
+					})),
+				},
+			];
+		}
 
-    // OBSOLETE MARK (safe, string-only, recovery-friendly)
-    if (opts.obsolete === "mark") {
-        const originalUnits: any[] = Array.isArray(body["trans-unit"])
-            ? body["trans-unit"]
-            : (body["trans-unit"] ? [body["trans-unit"]] : []);
+		transUnits.push(tu);
+	}
 
-        for (const key of obsoleteKeys) {
-            const original = originalUnits.find((u) => u["@_id"] === key);
-            if (!original) continue;
+	// add obsolete keys if we are marking or graveyard is disabled
+	if (opts.obsolete === "mark") {
+		const originalUnits = asArray(body["trans-unit"]) as Record<string, unknown>[];
+		for (const key of obsoleteKeys) {
+			const original = originalUnits.find((u) => u["@_id"] === key);
+			if (!original) continue;
 
-            const marked = { ...original };
-            // Ensure target is a string for the special __OBSOLETE__ prefixing handled by toXmlV12
-            const oldTarget = typeof original.target === "object" ? original.target["#text"] : original.target;
-            marked.target = `__OBSOLETE__${normalizeText(oldTarget)}`;
+			const marked = { ...original };
+			const oldTarget = (original.target as Record<string, unknown> | null)?.["#text"] ?? original.target;
+			marked.target = `__OBSOLETE__${normalizeText(oldTarget)}`;
+			transUnits.push(marked);
+		}
+	}
 
-            // We rely on toXmlV12 to serialize the rest (notes, attributes) from the raw object
-            transUnits.push(marked);
-        }
-    }
+	body["trans-unit"] = transUnits;
 
-    // apply rebuilt units
-    if (typeof body !== "object" || body === null) {
-        body = {};
-        file.body = body;
-    }
-    body["trans-unit"] = transUnits;
-
-    return toXmlV12(rawDoc);
+	return toXmlV12(rawDoc);
 }
 
 /* =======================
    XML SERIALIZER (1.2)
    ======================= */
 
-function escapeXml(s: string) {
-    return s
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&apos;");
-}
+function toXmlV12(doc: unknown): string {
+	const d = doc as Record<string, unknown>;
+	const xliff = d.xliff as Record<string, unknown>;
+	const file = xliff.file as Record<string, unknown>;
+	const body = file.body as Record<string, unknown>;
 
-function toXmlV12(doc: any): string {
-    const xliff = doc.xliff;
-    const file = xliff.file;
-    const body = file.body;
+	const headerAttrs = `version="${escapeXml(normalizeText(xliff["@_version"] ?? "1.2"))}"`;
 
-    const headerAttrs = `version="${escapeXml(normalizeText(xliff["@_version"] ?? "1.2"))}"`;
+	const fileAttrs: string[] = [];
+	for (const [k, v] of Object.entries(file)) {
+		if (k.startsWith("@_")) {
+			fileAttrs.push(`${k.slice(2)}="${escapeXml(normalizeText(v))}"`);
+		}
+	}
 
-    const fileAttrs: string[] = [];
-    for (const [k, v] of Object.entries(file)) {
-        if (k.startsWith("@_")) {
-            fileAttrs.push(`${k.slice(2)}="${escapeXml(normalizeText(v))}"`);
-        }
-    }
+	const units = asArray(body["trans-unit"]) as Record<string, unknown>[];
 
-    const units: any[] = Array.isArray(body["trans-unit"])
-        ? body["trans-unit"]
-        : [];
+	const unitsXml = units
+		.map((tu) => {
+			const tuId = normalizeText(tu["@_id"]);
+			const id = escapeXml(tuId);
+			const source = escapeXml(normalizeText(tu.source));
 
-    const unitsXml = units
-        .map((tu) => {
-            const id = escapeXml(normalizeText(tu["@_id"]));
-            const source = escapeXml(normalizeText(tu.source));
+			// Attributes
+			let attrs = "";
+			for (const [k, v] of Object.entries(tu)) {
+				if (k.startsWith("@_") && k !== "@_id") {
+					attrs += ` ${k.slice(2)}="${escapeXml(normalizeText(v))}"`;
+				}
+			}
 
-            // Attributes
-            let attrs = "";
-            for (const [k, v] of Object.entries(tu)) {
-                if (k.startsWith("@_") && k !== "@_id") {
-                    attrs += ` ${k.slice(2)}="${escapeXml(normalizeText(v))}"`;
-                }
-            }
+			let unitBody = `      <trans-unit id="${id}"${attrs}>\n`;
+			unitBody += `        <source>${source}</source>\n`;
 
-            let targetXml = "";
-            const targetRaw = tu.target;
+			// Target & State
+			let target = normalizeText(tu.target);
+			let state = "";
 
-            if (typeof targetRaw === "string") {
-                if (targetRaw.startsWith("__OBSOLETE__")) {
-                    const text = targetRaw.replace("__OBSOLETE__", "");
-                    targetXml = `<target state="obsolete">${escapeXml(normalizeText(text))}</target>`;
-                } else {
-                    targetXml = `<target>${escapeXml(normalizeText(targetRaw))}</target>`;
-                }
-            }
+			if (target.startsWith("__OBSOLETE__")) {
+				target = target.replace("__OBSOLETE__", "");
+				state = ' state="obsolete"';
+			}
 
-            // Context Groups
-            let contextXml = "";
-            if (tu["context-group"]) {
-                const cg = tu["context-group"];
-                const purpose = cg["@_purpose"] ? ` purpose="${escapeXml(cg["@_purpose"])}"` : "";
-                const contexts = Array.isArray(cg.context) ? cg.context : [cg.context];
-                const contextsStr = contexts.map((c: any) =>
-                    `        <context context-type="${escapeXml(c["@_context-type"])}">${escapeXml(normalizeText(c["#text"]))}</context>`
-                ).join("\n");
-                contextXml = `        <context-group${purpose}>\n${contextsStr}\n        </context-group>`;
-            }
+			if (tu.target !== undefined && tu.target !== null) {
+				unitBody += `        <target${state}>${escapeXml(target)}</target>\n`;
+			}
 
-            // Notes
-            let noteXml = "";
-            if (tu.note) {
-                const notes = Array.isArray(tu.note) ? tu.note : [tu.note];
-                noteXml = notes.map((n: any) => {
-                    let nAttrs = "";
-                    if (n["@_from"]) nAttrs += ` from="${escapeXml(n["@_from"])}"`;
-                    if (n["@_priority"]) nAttrs += ` priority="${escapeXml(n["@_priority"])}"`;
-                    return `        <note${nAttrs}>${escapeXml(normalizeText(n["#text"] ?? n))}</note>`;
-                }).join("\n");
-            }
+			// Notes
+			const notes = asArray(tu.note) as Record<string, unknown>[];
+			for (const n of notes) {
+				let noteAttrs = "";
+				if (n["@_from"]) noteAttrs += ` from="${escapeXml(normalizeText(n["@_from"]))}"`;
+				if (n["@_priority"]) noteAttrs += ` priority="${escapeXml(normalizeText(n["@_priority"]))}"`;
+				unitBody += `        <note${noteAttrs}>${escapeXml(normalizeText(n))}</note>\n`;
+			}
 
-            return (
-                `      <trans-unit id="${id}"${attrs}>\n` +
-                `        <source>${source}</source>\n` +
-                (targetXml ? `        ${targetXml}\n` : "") +
-                (contextXml ? `${contextXml}\n` : "") +
-                (noteXml ? `${noteXml}\n` : "") +
-                `      </trans-unit>`
-            );
-        })
-        .join("\n\n");
+			// Context groups (preservation)
+			const contexts = asArray(tu["context-group"]) as Record<string, unknown>[];
+			for (const cg of contexts) {
+				const purpose = cg["@_purpose"] ? ` purpose="${escapeXml(normalizeText(cg["@_purpose"]))}"` : "";
+				unitBody += `        <context-group${purpose}>\n`;
+				const ctxs = asArray(cg.context) as Record<string, unknown>[];
+				for (const ctx of ctxs) {
+					const type = ctx["@_context-type"] ? ` context-type="${escapeXml(normalizeText(ctx["@_context-type"]))}"` : "";
+					unitBody += `          <context${type}>${escapeXml(normalizeText(ctx))}</context>\n`;
+				}
+				unitBody += "        </context-group>\n";
+			}
 
-    return (
-        `<?xml version="1.0" encoding="UTF-8" ?>\n` +
-        `<xliff ${headerAttrs}>\n` +
-        `  <file ${fileAttrs.join(" ")}>\n` +
-        `    <body>\n` +
-        `${unitsXml}\n` +
-        `    </body>\n` +
-        `  </file>\n` +
-        `</xliff>\n`
-    );
+			unitBody += "      </trans-unit>";
+			return unitBody;
+		})
+		.join("\n");
+
+	return `<?xml version="1.0" encoding="UTF-8" ?>
+<xliff ${headerAttrs} xmlns="urn:oasis:names:tc:xliff:document:1.2">
+  <file ${fileAttrs.join(" ")}>\n    <body>\n${unitsXml}\n    </body>\n  </file>
+</xliff>`;
 }

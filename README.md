@@ -22,6 +22,23 @@ It is built to integrate seamlessly into professional workflows, supporting both
 
 ---
 
+## 🚀 Why `xlf-sync`?
+
+If you are coming from **`xliffmerge`** or **`ng-extract-i18n-merge`**, you'll find `xlf-sync` to be a modern, faster, and more reliable alternative.
+
+| Feature | `xlf-sync` | `xliffmerge` | `ng-extract-i18n-merge` |
+| :--- | :---: | :---: | :---: |
+| **XLIFF 1.2 & 2.0** | ✅ Yes | ✅ Yes | ⚠️ Partial |
+| **Metadata Preservation** | ✅ Absolute | ⚠️ Limited | ⚠️ Limited |
+| **Visual Dashboard** | ✅ Yes | ❌ No | ❌ No |
+| **Zero Data Loss** | ✅ Guaranteed | ⚠️ Risky | ✅ Yes |
+| **Active Maintenance** | ✅ Active | ❌ Legacy | ✅ Active |
+
+> [!TIP]
+> **Migration follows a similar flow**: Simply point `xlf-sync` to your source and locale files. It will automatically detect your XLIFF version and merge without stripping your approved translations or translator notes.
+
+---
+
 ## ✨ Key Features
 
 - **🔄 Full Synchronization**: Automatically adds missing keys from `messages.xlf` to all your locale files.
@@ -43,10 +60,23 @@ Install globally or as a dev dependency in your project:
 npm install -D xlf-sync
 ```
 
-Run via `npx` or add a script to your `package.json`:
-
 ```bash
 npx xlf-sync --help
+```
+
+### 🎮 How it looks
+
+```text
+$ npx xlf-sync sync
+
+  xlf-sync v1.3.7
+  --------------------------------------------------
+  ✔ messages.xlf parsed (142 keys)
+  ✔ messages.el.xlf synced (+12 new, -3 obsolete)
+  ✔ messages.de.xlf synced (+12 new, -3 obsolete)
+  ✔ messages.fr.xlf synced (+12 new, -3 obsolete)
+  --------------------------------------------------
+  ✨ Done! Your locale files are in perfect sync.
 ```
 
 ---
