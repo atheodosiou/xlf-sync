@@ -4,11 +4,20 @@ import { countWords, calculateStats, performReport, registerReportCommand } from
 import * as discover from "../src/core/discover.js";
 import * as banner from "../src/ui/banner.js";
 import * as config from "../src/core/config.js";
+import * as xlfIndex from "../src/core/xlf/index.js";
 import { isUntranslated } from "../src/core/sync.js";
-import { writeFile, mkdir, rm } from "fs/promises";
+import { writeFile, mkdir, rm, readFile } from "fs/promises";
 import { join } from "path";
 
 const TEST_DIR = join(process.cwd(), "test-temp-report");
+
+vi.mock("fs/promises", async (importOriginal) => {
+    const actual = await importOriginal<typeof import("fs/promises")>();
+    return {
+        ...actual,
+        readFile: vi.fn(),
+    };
+});
 
 describe("Report Logic", () => {
     describe("isUntranslated", () => {
@@ -46,14 +55,15 @@ describe("Report Logic", () => {
 
     describe("calculateStats", () => {
         it("should calculate stats correctly", () => {
-            const entries = [
-                { targetXml: "Translated 1" },
-                { targetXml: "TODO" },
-                { targetXml: "" },
-                { targetXml: "Translated 2 with words" },
-            ];
+            const sourceKeys = ["id1", "id2", "id3", "id4"];
+            const localeEntries = new Map([
+                ["id1", { targetXml: "Translated 1" }],
+                ["id2", { targetXml: "TODO" }],
+                ["id3", { targetXml: "" }],
+                ["id4", { targetXml: "Translated 2 with words" }],
+            ]);
 
-            const stats = calculateStats(entries);
+            const stats = calculateStats(sourceKeys, localeEntries);
 
             expect(stats.total).toBe(4);
             expect(stats.todo).toBe(2);
@@ -63,7 +73,7 @@ describe("Report Logic", () => {
         });
 
         it("should handle empty entries", () => {
-            const stats = calculateStats([]);
+            const stats = calculateStats([], new Map());
             expect(stats.total).toBe(0);
             expect(stats.coverage).toBe(100);
         });
@@ -72,6 +82,7 @@ describe("Report Logic", () => {
     describe("performReport integration", () => {
         beforeEach(async () => {
             await mkdir(TEST_DIR, { recursive: true });
+            vi.restoreAllMocks();
         });
 
         afterEach(async () => {
@@ -89,15 +100,41 @@ describe("Report Logic", () => {
                 <trans-unit id="1"><source>S</source><target>TODO</target></trans-unit>
             </body></file></xliff>`;
 
-            await writeFile(f1, xml1);
-            await writeFile(f2, xml2);
+            // Mocking readFile to return our dummy XMLs instead of trying to read from disk if needed,
+            // but performReport uses readFile internally. Let's redirect it.
+            vi.mocked(readFile).mockImplementation(async (path: any) => {
+                if (path === f1) return xml1;
+                if (path === f2) return xml2;
+                throw new Error("File not found");
+            });
+
+            // We must mock parseXlf because performReport calls it after readFile
+            vi.mocked(xlfIndex.parseXlf).mockImplementation((xml) => {
+                if (xml === xml1) {
+                    return {
+                        version: "1.2",
+                        entries: new Map([["1", { targetXml: "T" }]]),
+                        raw: {}
+                    } as any;
+                }
+                if (xml === xml2) {
+                    return {
+                        version: "1.2",
+                        entries: new Map([["1", { targetXml: "TODO" }]]),
+                        raw: {}
+                    } as any;
+                }
+                throw new Error("Parse error");
+            });
+
+            const sourceKeys = ["1"];
 
             const rows = await performReport({
                 localeFiles: [
                     { locale: "el", filePath: f1 },
                     { locale: "fr", filePath: f2 },
                 ]
-            });
+            }, sourceKeys);
 
             expect(rows).toHaveLength(2);
             expect(rows.find(r => r.locale === "el")?.coverage).toBe(100);
@@ -114,6 +151,8 @@ describe("Report Logic", () => {
             vi.mock("../src/core/discover.js");
             vi.mock("../src/ui/banner.js");
             vi.mock("../src/core/config.js");
+            vi.mock("../src/core/xlf/index.js");
+            vi.mocked(readFile).mockResolvedValue("<xliff version='1.2'/>");
         });
 
         it("should call registerReportCommand and execute action", async () => {
@@ -122,8 +161,11 @@ describe("Report Logic", () => {
                 localeFiles: [{ locale: "el", filePath: "dummy" }],
                 sourcePath: "source"
             } as any);
-            // Mocking the behavior of performReport indirectly by mocking files
-            // but since we already tested the logic, we just want to see if it runs
+            vi.mocked(xlfIndex.parseXlf).mockReturnValue({
+                version: "1.2",
+                entries: new Map([["1", { key: "1", sourceXml: "S" }]]),
+                raw: {}
+            });
 
             await program.parseAsync(["node", "test", "report"]);
             expect(discover.discoverFiles).toHaveBeenCalled();
