@@ -1,8 +1,8 @@
 export function generateDashboardHtml(data: unknown, version: string): string {
-	const jsonData = JSON.stringify(data);
-	const date = new Date().toLocaleString();
+    const jsonData = JSON.stringify(data);
+    const date = new Date().toLocaleString();
 
-	return `<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <html lang="en" class="h-full bg-gray-50">
 <head>
     <meta charset="UTF-8">
@@ -103,6 +103,23 @@ export function generateDashboardHtml(data: unknown, version: string): string {
                         <div>
                             <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Pending</p>
                             <p class="text-2xl font-black" x-text="pendingKeysCount"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Health Warnings -->
+                <div x-show="healthWarnings.length > 0" x-cloak class="mb-10 bg-amber-50 border border-amber-200 rounded-2xl p-6">
+                    <div class="flex items-start gap-4">
+                        <div class="bg-amber-100 p-2 rounded-lg text-amber-600">
+                             <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-bold text-amber-900 uppercase tracking-wider">Health Warnings</h3>
+                            <ul class="mt-2 space-y-1">
+                                <template x-for="warn in healthWarnings">
+                                    <li class="text-sm text-amber-700 font-medium list-disc list-inside" x-text="warn"></li>
+                                </template>
+                            </ul>
                         </div>
                     </div>
                 </div>
@@ -219,6 +236,19 @@ export function generateDashboardHtml(data: unknown, version: string): string {
                     matrix: data.matrix,
                     locales: data.locales,
                     searchMatrix: '',
+                    healthWarnings: [],
+                    init() {
+                        const w = [];
+                        if (data.sourceDuplicates?.length) {
+                            w.push('Source file has duplicate IDs: ' + data.sourceDuplicates.join(', '));
+                        }
+                        for(const s of this.stats) {
+                            if (s.duplicates?.length) {
+                                w.push('Locale [' + s.locale + '] has duplicate IDs: ' + s.duplicates.join(', '));
+                            }
+                        }
+                        this.healthWarnings = w;
+                    },
                     get filteredMatrix() {
                         const q = this.searchMatrix.toLowerCase();
                         if (!q) return this.matrix;

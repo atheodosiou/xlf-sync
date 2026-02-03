@@ -19,6 +19,7 @@ export interface ReportRow {
 	todo: number;
 	coverage: number;
 	words: number;
+	duplicates?: string[];
 }
 
 export function renderSummaryTable(rows: SummaryRow[]) {

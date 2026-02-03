@@ -1,6 +1,6 @@
 {
 	"name": "xlf-sync",
-	"version": "1.4.0",
+	"version": "1.4.1",
 	"description": "The definitive CLI for synchronizing Angular XLIFF (1.2 & 2.0) locale files. Keep translations in perfect sync with automation, visual dashboards, and CI/CD integration. Zero data loss.",
 	"type": "module",
 	"bin": {

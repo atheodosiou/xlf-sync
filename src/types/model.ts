@@ -28,6 +28,7 @@ export interface ParsedXlf {
 	version: XlfVersion;
 	locale?: string; // e.g. el, de (if present)
 	entries: Map<string, MessageEntry>;
+	duplicates?: string[]; // Keys that appeared more than once
 	raw: unknown; // original parsed tree for serialization
 }
 

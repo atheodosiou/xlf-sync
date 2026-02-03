@@ -18,18 +18,19 @@ export function countWords(text: string | undefined): number {
 		.split(/\s+/)
 		.filter((w) => w.length > 0).length;
 }
-
 export interface LocaleStats {
 	total: number;
 	done: number;
 	todo: number;
 	coverage: number;
 	words: number;
+	duplicates?: string[];
 }
 
 export function calculateStats(
 	sourceKeys: string[],
 	localeEntries: Map<string, MessageEntry>,
+	duplicates?: string[],
 ): LocaleStats {
 	let done = 0;
 	let todo = 0;
@@ -48,7 +49,7 @@ export function calculateStats(
 	const total = sourceKeys.length;
 	const coverage = total > 0 ? (done / total) * 100 : 100;
 
-	return { total, done, todo, coverage, words };
+	return { total, done, todo, coverage, words, duplicates };
 }
 
 export async function performReport(
@@ -60,7 +61,7 @@ export async function performReport(
 	for (const lf of res.localeFiles) {
 		const xml = await readFile(lf.filePath, "utf-8");
 		const parsed = parseXlf(xml);
-		const stats = calculateStats(sourceKeys, parsed.entries);
+		const stats = calculateStats(sourceKeys, parsed.entries, parsed.duplicates);
 
 		rows.push({
 			locale: lf.locale,
@@ -112,6 +113,13 @@ export function registerReportCommand(program: Command) {
 
 				const sourceXml = await readFile(finalOpts.source, "utf-8");
 				const sourceParsed = parseXlf(sourceXml);
+
+				if (sourceParsed.duplicates && sourceParsed.duplicates.length > 0) {
+					ui.warn(
+						`Source file has duplicate IDs: ${sourceParsed.duplicates.join(", ")}`,
+					);
+				}
+
 				const sourceKeys = Array.from(sourceParsed.entries.keys());
 
 				const rows = await performReport(res, sourceKeys);
@@ -122,6 +130,15 @@ export function registerReportCommand(program: Command) {
 					ui.warn("No locale files found.");
 				} else {
 					renderReportTable(rows);
+
+					// Print locale duplicates warnings
+					for (const row of rows) {
+						if (row.duplicates && row.duplicates.length > 0) {
+							ui.warn(
+								`Locale [${row.locale}] has duplicate IDs: ${row.duplicates.join(", ")}`,
+							);
+						}
+					}
 				}
 			} catch (e: unknown) {
 				spinner.fail("Failed");

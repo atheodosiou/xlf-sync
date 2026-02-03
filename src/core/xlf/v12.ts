@@ -7,8 +7,10 @@ function asArray<T>(v: T | T[] | undefined | null): T[] {
 
 export function parseV12(doc: unknown): ParsedXlf {
 	const entries = new Map<string, MessageEntry>();
+	const duplicates: string[] = [];
 
-	const xliff = doc.xliff;
+	const d = doc as { xliff: any };
+	const xliff = d.xliff;
 	const file = xliff.file;
 	const locale = file?.["@_target-language"]; // optional
 
@@ -19,6 +21,10 @@ export function parseV12(doc: unknown): ParsedXlf {
 	for (const tu of transUnits) {
 		const id = tu?.["@_id"];
 		if (!id) continue;
+
+		if (entries.has(id)) {
+			duplicates.push(id);
+		}
 
 		const source = tu.source ?? "";
 		const target = tu.target;
@@ -40,7 +46,7 @@ export function parseV12(doc: unknown): ParsedXlf {
 
 		const contexts = asArray(tu["context-group"]).flatMap(
 			(cg: Record<string, unknown>) =>
-				asArray(cg.context).map((c: Record<string, unknown>) => ({
+				asArray(cg.context).map((c: any) => ({
 					type: (c?.["@_context-type"] as string) ?? "",
 					content: toXmlText(c),
 				})),
@@ -60,6 +66,7 @@ export function parseV12(doc: unknown): ParsedXlf {
 		version: "1.2",
 		locale,
 		entries,
+		duplicates: duplicates.length > 0 ? duplicates : undefined,
 		raw: doc,
 	};
 }

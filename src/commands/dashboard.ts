@@ -83,7 +83,7 @@ export function registerDashboardCommand(program: Command) {
 				}
 
 				const html = generateDashboardHtml(
-					{ stats, matrix, locales },
+					{ stats, matrix, locales, sourceDuplicates: sourceParsed.duplicates },
 					pkg.version,
 				);
 

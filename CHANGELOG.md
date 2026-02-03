@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 
 
+## [1.4.1] - 2026-02-04
+
+### Added
+- **Duplicate ID Detection**: The tool now scans for duplicate `trans-unit` (v1.2) or `unit` (v2.0) IDs and provides health warnings in the CLI and Dashboard.
+- **Improved Dry-Run**: The `sync --dry-run` command now provides a detailed summary of proposed changes (added/obsolete keys).
+- **Health Dashboard**: The web dashboard now includes a "Health Warnings" section to highlight structural issues in XLIFF files.
+
+
 ## [1.4.0] - 2026-02-04
 
 ### Added

@@ -7,8 +7,10 @@ function asArray<T>(v: T | T[] | undefined | null): T[] {
 
 export function parseV20(doc: unknown): ParsedXlf {
 	const entries = new Map<string, MessageEntry>();
+	const duplicates: string[] = [];
 
-	const xliff = doc.xliff;
+	const d = doc as { xliff: any };
+	const xliff = d.xliff;
 	const locale = xliff?.["@_trgLang"]; // optional
 
 	const file = xliff.file;
@@ -18,6 +20,10 @@ export function parseV20(doc: unknown): ParsedXlf {
 	for (const unit of units) {
 		const unitId = unit?.["@_id"];
 		if (!unitId) continue;
+
+		if (entries.has(unitId)) {
+			duplicates.push(unitId);
+		}
 
 		// Custom attributes
 		const attributes: Record<string, string> = {};
@@ -62,6 +68,7 @@ export function parseV20(doc: unknown): ParsedXlf {
 		version: "2.0",
 		locale,
 		entries,
+		duplicates: duplicates.length > 0 ? duplicates : undefined,
 		raw: doc,
 	};
 }
