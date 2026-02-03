@@ -6,6 +6,7 @@
 [![license](https://img.shields.io/github/license/atheodosiou/xlf-sync.svg?style=flat-square)](https://github.com/atheodosiou/xlf-sync/blob/master/LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
+[![CI](https://github.com/atheodosiou/xlf-sync/actions/workflows/ci.yml/badge.svg)](https://github.com/atheodosiou/xlf-sync/actions/workflows/ci.yml)
 
 > 📝 **Read the article:** [The Missing Piece in Angular i18n](https://dev.to/atheodosiou/the-missing-piece-in-angular-i18n-57m0)
 

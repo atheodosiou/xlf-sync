@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 
 
+## [1.3.7] - 2026-02-03
+
+### Added
+- **GitHub Actions CI**: Implemented an automated CI workflow that runs tests and build on every push and pull request to `main`/`master` branches.
+- **Build status badge**: Added a CI status badge to the README for real-time visibility of the build status.
+
+### Fixed
+- **Test Stability**: Resolved `EBUSY` errors on Windows by using unique temporary directories for each test file discovery.
+- **Report Logic Tests**: Fixed unit tests for the `report` command to align with the current implementation's function signatures.
+
+---
+
 ## [1.3.6] - 2026-02-02
 
 ### Added
