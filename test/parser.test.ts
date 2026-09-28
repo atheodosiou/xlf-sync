@@ -151,7 +151,7 @@ describe("XLIFF Parser", () => {
 			expect(result.entries.get("second")?.targetXml).toBe("Deuxième");
 		});
 
-		it("should handle mixed/weird content in v1.2 with fallback", () => {
+		it("should keep CDATA sections verbatim in v1.2", () => {
 			const xml = `
 <xliff version="1.2">
   <file source-language="en" datatype="plaintext">
@@ -163,7 +163,7 @@ describe("XLIFF Parser", () => {
   </file>
 </xliff>`;
 			const parsed = parseXlf(xml);
-			expect(parsed.entries.get("weird")?.sourceXml).toBe("Some CDATA");
+			expect(parsed.entries.get("weird")?.sourceXml).toBe("<![CDATA[Some CDATA]]>");
 		});
 
 		it("should preserve inline placeholder tags in XLIFF 1.2", () => {
