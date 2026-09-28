@@ -126,7 +126,7 @@ function toXmlV12(doc: unknown): string {
 		.map((tu) => {
 			const tuId = normalizeText(tu["@_id"]);
 			const id = escapeXml(tuId);
-			const source = escapeXml(normalizeText(tu.source));
+			const source = normalizeText(tu.source);
 
 			// Attributes
 			let attrs = "";
@@ -149,7 +149,7 @@ function toXmlV12(doc: unknown): string {
 			}
 
 			if (tu.target !== undefined && tu.target !== null) {
-				unitBody += `        <target${state}>${escapeXml(target)}</target>\n`;
+				unitBody += `        <target${state}>${target}</target>\n`;
 			}
 
 			// Notes

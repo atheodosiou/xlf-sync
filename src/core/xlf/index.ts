@@ -13,6 +13,8 @@ const parser = new XMLParser({
 	ignoreAttributes: false,
 	attributeNamePrefix: "@_",
 	preserveOrder: false,
+	// keep <source>/<target> inner XML verbatim so inline tags (<x/>, <ph/>, <g>) survive
+	stopNodes: ["*.source", "*.target"],
 });
 
 export function parseXlf(xml: string): ParsedXlf {
