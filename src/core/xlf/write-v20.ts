@@ -153,15 +153,15 @@ function toXmlV20(doc: unknown): string {
 			}
 
 			const seg = (u.segment ?? {}) as Record<string, unknown>;
-			const source = escapeXml(String(seg.source ?? ""));
+			const source = String(seg.source ?? "");
 
 			let targetXml = "";
 			if (typeof seg.target === "string") {
 				if (seg.target.startsWith("__OBSOLETE__")) {
 					const text = seg.target.replace("__OBSOLETE__", "");
-					targetXml = `<target state="obsolete">${escapeXml(text)}</target>`;
+					targetXml = `<target state="obsolete">${text}</target>`;
 				} else {
-					targetXml = `<target>${escapeXml(seg.target)}</target>`;
+					targetXml = `<target>${seg.target}</target>`;
 				}
 			}
 

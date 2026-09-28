@@ -119,4 +119,35 @@ describe("XLIFF 1.2 Serialization", () => {
 		expect(reparsed.entries.get("hello")?.sourceXml).toBe("Hello");
 		expect(reparsed.entries.get("hello")?.targetXml).toBe("Hola");
 	});
+
+	it("should roundtrip inline placeholder tags and entities untouched", () => {
+		const originalXml = `<?xml version="1.0" encoding="UTF-8" ?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+  <file source-language="en" target-language="de" datatype="plaintext">
+    <body>
+      <trans-unit id="paging">
+        <source>Page <x id="PH" equiv-text="page + 1"/> of <x id="PH_1" equiv-text="amountPages"/></source>
+        <target>Seite <x id="PH" equiv-text="page + 1"/> von <x id="PH_1" equiv-text="amountPages"/></target>
+      </trans-unit>
+      <trans-unit id="entities">
+        <source>Users &amp; Roles</source>
+        <target>Benutzer &amp; Rollen</target>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>`;
+
+		const parsed = parseXlf(originalXml);
+		const serialized = writeV12(parsed.raw, parsed.entries, [], {
+			newTarget: "todo",
+			obsolete: "mark",
+		});
+
+		expect(serialized).toContain(
+			'<target>Seite <x id="PH" equiv-text="page + 1"/> von <x id="PH_1" equiv-text="amountPages"/></target>',
+		);
+		expect(serialized).toContain("<source>Users &amp; Roles</source>");
+		expect(serialized).toContain("<target>Benutzer &amp; Rollen</target>");
+		expect(serialized).not.toContain("&amp;amp;");
+	});
 });

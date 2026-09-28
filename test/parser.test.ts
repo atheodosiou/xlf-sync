@@ -151,7 +151,7 @@ describe("XLIFF Parser", () => {
 			expect(result.entries.get("second")?.targetXml).toBe("Deuxième");
 		});
 
-		it("should handle mixed/weird content in v1.2 with fallback", () => {
+		it("should keep CDATA sections verbatim in v1.2", () => {
 			const xml = `
 <xliff version="1.2">
   <file source-language="en" datatype="plaintext">
@@ -163,7 +163,59 @@ describe("XLIFF Parser", () => {
   </file>
 </xliff>`;
 			const parsed = parseXlf(xml);
-			expect(parsed.entries.get("weird")?.sourceXml).toBe("Some CDATA");
+			expect(parsed.entries.get("weird")?.sourceXml).toBe("<![CDATA[Some CDATA]]>");
+		});
+
+		it("should preserve inline placeholder tags in XLIFF 1.2", () => {
+			const xml = `<?xml version="1.0" encoding="UTF-8" ?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+  <file source-language="en" target-language="de" datatype="plaintext">
+    <body>
+      <trans-unit id="paging">
+        <source>Page <x id="PH" equiv-text="page + 1"/> of <x id="PH_1" equiv-text="amountPages"/></source>
+        <target>Seite <x id="PH" equiv-text="page + 1"/> von <x id="PH_1" equiv-text="amountPages"/></target>
+      </trans-unit>
+      <trans-unit id="plural">
+        <source>{VAR_PLURAL, plural, =1 {1 item} other {<x id="INTERPOLATION"/> items}}</source>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>`;
+
+			const result = parseXlf(xml);
+
+			expect(result.entries.get("paging")?.sourceXml).toBe(
+				'Page <x id="PH" equiv-text="page + 1"/> of <x id="PH_1" equiv-text="amountPages"/>',
+			);
+			expect(result.entries.get("paging")?.targetXml).toBe(
+				'Seite <x id="PH" equiv-text="page + 1"/> von <x id="PH_1" equiv-text="amountPages"/>',
+			);
+			expect(result.entries.get("plural")?.sourceXml).toBe(
+				'{VAR_PLURAL, plural, =1 {1 item} other {<x id="INTERPOLATION"/> items}}',
+			);
+		});
+
+		it("should preserve inline placeholder tags in XLIFF 2.0", () => {
+			const xml = `<?xml version="1.0" encoding="UTF-8" ?>
+<xliff version="2.0" xmlns="urn:oasis:names:tc:xliff:document:2.0" srcLang="en" trgLang="de">
+  <file id="f1">
+    <unit id="paging">
+      <segment>
+        <source>Page <ph id="0" equiv="PH" disp="page + 1"/> of <ph id="1" equiv="PH_1" disp="amountPages"/></source>
+        <target>Seite <ph id="0" equiv="PH" disp="page + 1"/> von <ph id="1" equiv="PH_1" disp="amountPages"/></target>
+      </segment>
+    </unit>
+  </file>
+</xliff>`;
+
+			const result = parseXlf(xml);
+
+			expect(result.entries.get("paging")?.sourceXml).toBe(
+				'Page <ph id="0" equiv="PH" disp="page + 1"/> of <ph id="1" equiv="PH_1" disp="amountPages"/>',
+			);
+			expect(result.entries.get("paging")?.targetXml).toBe(
+				'Seite <ph id="0" equiv="PH" disp="page + 1"/> von <ph id="1" equiv="PH_1" disp="amountPages"/>',
+			);
 		});
 	});
 });

@@ -56,6 +56,11 @@ describe("Report Logic", () => {
 			expect(countWords("This is a long sentence")).toBe(5);
 			expect(countWords("   multi   space   test   ")).toBe(3);
 		});
+
+		it("should not count inline placeholder tags as words", () => {
+			expect(countWords('Page <x id="PH"/> of <x id="PH_1"/>')).toBe(2);
+			expect(countWords('<ph id="0" equiv="INTERPOLATION"/>')).toBe(0);
+		});
 	});
 
 	describe("calculateStats", () => {

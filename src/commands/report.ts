@@ -14,6 +14,7 @@ import { renderReportTable } from "../ui/table.js";
 export function countWords(text: string | undefined): number {
 	if (!text) return 0;
 	return text
+		.replace(/<[^>]+>/g, " ") // inline tags (<x/>, <ph/>) are not words
 		.trim()
 		.split(/\s+/)
 		.filter((w) => w.length > 0).length;
